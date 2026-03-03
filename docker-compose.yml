@@ -21,8 +21,13 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
+      # This allows pgAdmin to save settings without asking for a Master Password
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: 'False'
     ports:
       - "8080:80"
+    volumes:
+      # Map the internal pgAdmin data to a local Docker volume
+      - pgadmin_data:/var/lib/pgadmin
     depends_on:
       - db
 
@@ -31,7 +36,7 @@ services:
     build: .
     container_name: tennis_api
     volumes:
-      - .:/app
+      - .:/project
     ports:
       - "8000:8000"
     environment:
@@ -42,3 +47,4 @@ services:
 
 volumes:
   postgres_data:
+  pgadmin_data:

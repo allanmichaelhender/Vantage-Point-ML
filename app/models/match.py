@@ -10,15 +10,18 @@ class Match(Base):
     tourney_id: Mapped[str] = mapped_column(String(50), index=True)
     tourney_name: Mapped[str] = mapped_column(String(100))
     surface: Mapped[str] = mapped_column(String(20))
-    tourney_level: Mapped[str] = mapped_column(String(1))
-    tourney_date: Mapped[datetime] = mapped_column(DateTime, index=True)
-    match_num: Mapped[int] = mapped_column(Integer)
+    tourney_level: Mapped[str] = mapped_column(String(10))
+    tourney_date: Mapped[datetime] = mapped_column(DateTime)
     
-    # ID's with foreign keys set up
-    winner_id: Mapped[int] = mapped_column(ForeignKey("players.id"), index=True)
-    loser_id: Mapped[int] = mapped_column(ForeignKey("players.id"), index=True)
+    winner_id: Mapped[str] = mapped_column(ForeignKey("players.id"), index=True)
+    loser_id: Mapped[str] = mapped_column(ForeignKey("players.id"), index=True)
     
-    # Performance Stats (Winner)
+    score: Mapped[str] = mapped_column(String(100))
+    best_of: Mapped[int] = mapped_column(Integer)
+    round: Mapped[str] = mapped_column(String(10))
+    minutes: Mapped[int | None] = mapped_column(Integer)
+
+    # Winner Stats
     w_ace: Mapped[int | None] = mapped_column(Integer)
     w_df: Mapped[int | None] = mapped_column(Integer)
     w_svpt: Mapped[int | None] = mapped_column(Integer)
@@ -28,8 +31,9 @@ class Match(Base):
     w_SvGms: Mapped[int | None] = mapped_column(Integer)
     w_bpSaved: Mapped[int | None] = mapped_column(Integer)
     w_bpFaced: Mapped[int | None] = mapped_column(Integer)
-    
-    # Performance Stats (Loser)
+    winner_rank: Mapped[int | None] = mapped_column(Integer)
+
+    # Loser Stats
     l_ace: Mapped[int | None] = mapped_column(Integer)
     l_df: Mapped[int | None] = mapped_column(Integer)
     l_svpt: Mapped[int | None] = mapped_column(Integer)
@@ -39,8 +43,5 @@ class Match(Base):
     l_SvGms: Mapped[int | None] = mapped_column(Integer)
     l_bpSaved: Mapped[int | None] = mapped_column(Integer)
     l_bpFaced: Mapped[int | None] = mapped_column(Integer)
+    loser_rank: Mapped[int | None] = mapped_column(Integer)
 
-    score: Mapped[str] = mapped_column(String(100))
-    best_of: Mapped[int] = mapped_column(Integer)
-    round: Mapped[str] = mapped_column(String(10))
-    minutes: Mapped[int | None] = mapped_column(Integer)

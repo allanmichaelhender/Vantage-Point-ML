@@ -7,7 +7,7 @@ class Player(Base):
     __tablename__ = "players"
     
     # Primary Key is the ATP ID from your CSV
-    id: Mapped[int] = mapped_column(primary_key=True) 
+    id: Mapped[str] = mapped_column(String(50),primary_key=True) 
     
     # Core Bio Data
     player: Mapped[str] = mapped_column(String(150), index=True) # Full Name
