@@ -32,6 +32,7 @@ class Match(Base):
     w_bpSaved: Mapped[int | None] = mapped_column(Integer)
     w_bpFaced: Mapped[int | None] = mapped_column(Integer)
     winner_rank: Mapped[int | None] = mapped_column(Integer)
+    winner_ranking_points: Mapped[int | None] = mapped_column(Integer)
 
     # Loser Stats
     l_ace: Mapped[int | None] = mapped_column(Integer)
@@ -44,4 +45,5 @@ class Match(Base):
     l_bpSaved: Mapped[int | None] = mapped_column(Integer)
     l_bpFaced: Mapped[int | None] = mapped_column(Integer)
     loser_rank: Mapped[int | None] = mapped_column(Integer)
+    loser_ranking_points: Mapped[int | None] = mapped_column(Integer)
 

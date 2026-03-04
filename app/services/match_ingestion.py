@@ -5,13 +5,14 @@ from datetime import datetime
 from sqlalchemy.dialects.postgresql import insert
 from app.database.session import async_session
 from app.models.match import Match
+from app.models.player import Player 
+from sqlalchemy import select
 
 
 async def ingest_csv_file(file_path: str):
     """Processes a single year of ATP data."""
     print(f"🔄 Processing {os.path.basename(file_path)}...")
-
-    chunk_size = 1000
+    chunk_size = 600
 
     # Load CSV with String IDs to prevent float scientific notation
     reader = pd.read_csv(
@@ -20,6 +21,8 @@ async def ingest_csv_file(file_path: str):
         chunksize=chunk_size,
         dtype={"winner_id": str, "loser_id": str},
     )
+
+
 
     def clean_int(val):
         if pd.isna(val) or val is None:
@@ -31,6 +34,12 @@ async def ingest_csv_file(file_path: str):
 
     total = 0
     async with async_session() as session:
+        result = await session.execute(select(Player.id))
+        valid_ids = set(result.scalars().all())
+
+
+
+
         for df_chunk in reader:
             # 2. Vectorized cleaning for the chunk
             df_chunk = df_chunk.where(pd.notnull(df_chunk), None)
@@ -58,8 +67,12 @@ async def ingest_csv_file(file_path: str):
                     "w_1stIn": clean_int(row.get("w_1stIn")),
                     "w_1stWon": clean_int(row.get("w_1stWon")),
                     "w_2ndWon": clean_int(row.get("w_2ndWon")),
+                    "w_SvGms": clean_int(row.get("w_SvGms")),
                     "w_bpSaved": clean_int(row.get("w_bpSaved")),
                     "w_bpFaced": clean_int(row.get("w_bpFaced")),
+                    "winner_rank": clean_int(row.get("winner_rank")),
+                    "winner_ranking_points": clean_int(row.get("winner_rank_points")),
+
                     # Loser Stats
                     "l_ace": clean_int(row.get("l_ace")),
                     "l_df": clean_int(row.get("l_df")),
@@ -67,11 +80,15 @@ async def ingest_csv_file(file_path: str):
                     "l_1stIn": clean_int(row.get("l_1stIn")),
                     "l_1stWon": clean_int(row.get("l_1stWon")),
                     "l_2ndWon": clean_int(row.get("l_2ndWon")),
+                    "l_SvGms": clean_int(row.get("l_SvGms")),
                     "l_bpSaved": clean_int(row.get("l_bpSaved")),
                     "l_bpFaced": clean_int(row.get("l_bpFaced")),
+                    "loser_rank": clean_int(row.get("loser_rank")),
+                    "loser_ranking_points": clean_int(row.get("loser_rank_points")),
                 }
                 for _, row in df_chunk.iterrows()
-                if not pd.isna(row.get("winner_id"))  # Basic validation
+                if str(row["winner_id"]) in valid_ids 
+                and str(row["loser_id"]) in valid_ids
             ]
 
             if matches_data:
