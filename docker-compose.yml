@@ -32,7 +32,7 @@ services:
       - db
 
   # 3. FastAPI Backend (The Engine)
-  api:
+  tennis_api:
     build: .
     container_name: tennis_api
     volumes:
@@ -44,6 +44,20 @@ services:
     depends_on:
       - db
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+
+  frontend:
+    build: ./frontend
+    container_name: tennis_ui
+    volumes:
+      - ./frontend:/project         # Syncs your code (src, etc.)
+      - /project/node_modules       # <--- THIS IS THE FIX: Keeps node_modules INSIDE Docker only
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - tennis_api
 
 volumes:
   postgres_data:
