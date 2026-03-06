@@ -2,10 +2,12 @@ from fastapi import APIRouter, Query
 from sqlalchemy import select
 from app.database.session import async_session
 from app.models.player import Player
+from app.schemas.player import PlayerListResponse
+
 
 router = APIRouter()
 
-@router.get("/search")
+@router.get("/search", response_model=PlayerListResponse)
 async def search_players(q: str = Query(..., min_length=2)):
     """
     Fuzzy search for players by name for the React Autocomplete.
