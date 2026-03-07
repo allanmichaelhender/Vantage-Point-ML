@@ -47,7 +47,7 @@ class LLMService:
         base_url = "https://api.the-odds-api.com/v4/sports"
 
         async with httpx.AsyncClient() as client:
-            print("🔍 Discovery: Finding active Tennis tournaments...")
+            # print("🔍 Discovery: Finding active Tennis tournaments...")
             # Use params= for the apiKey to ensure it's encoded correctly
             sports_resp = await client.get(base_url, params={"apiKey": api_key})
 
@@ -55,9 +55,9 @@ class LLMService:
 
             # 🔍 DEBUG: See what we actually got
             if isinstance(all_sports, dict):
-                print(
-                    f"⚠️ API returned a Dictionary (likely Welcome message): {all_sports.get('message')}"
-                )
+                # print(
+                #     f"⚠️ API returned a Dictionary (likely Welcome message): {all_sports.get('message')}"
+                # )
                 return []
 
             # 2. FILTER: Active Men's Singles Tennis
@@ -70,7 +70,7 @@ class LLMService:
                 and s.get("description") == "Men's Singles"
             ]
 
-            print(active_keys)
+            # print(active_keys)
 
             # 3. LOOP: Get Odds for each active key
             master_data = {"matches": []}
@@ -84,7 +84,7 @@ class LLMService:
                     "oddsFormat": "decimal",
                 }
 
-                print(f"   -> Fetching odds for {sport_key}...")
+                # print(f"   -> Fetching odds for {sport_key}...")
                 odds_resp = await client.get(odds_url, params=odds_params)
                 raw_matches = odds_resp.json()
 
@@ -152,6 +152,7 @@ class LLMService:
   1. Primary Key: Use fuzzy string matching to link names (e.g., "J. Sinner" = "Jannik Sinner").
   2. ID Injection: For every match, provide the 'p1_id' and 'p2_id' found in the <elite_player_db>.
   3. Null Handling: If a player in the market is NOT in the Top 100 DB, set their ID to null.
+  4. Predict Surface: Return the surface for each match by looking at the tournament, choose from ["Hard", "Clay", "Grass"]
 </matching_rules>
 
 <selection_priority>
@@ -174,7 +175,8 @@ class LLMService:
         "bf_p1": float,
         "bf_p2": float,
         "tournament": "string",
-        "commence_time": "string"
+        "commence_time": "string",
+        "surface": "string"
       }}
     ]
   }}
@@ -195,7 +197,7 @@ class LLMService:
         try:
             # 3. Parse and return the structured data
             data = json.loads(response.text)
-            print(data.get("featured_matches", []))
+            # print(data.get("featured_matches", []))
             return data.get("featured_matches", [])
         except Exception as e:
             print(f"❌ Gemini Parsing Error: {e}")

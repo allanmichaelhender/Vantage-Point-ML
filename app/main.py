@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.endpoints import players, predict, upcoming_matches
+from app.api.endpoints import players, manual_predict, upcoming_matches
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -25,7 +25,7 @@ app.add_middleware(
 # 2. REGISTER ROUTERS
 # This makes the endpoint: GET http://localhost:8000/api/v1/players/search
 app.include_router(players.router, prefix="/api/v1/players", tags=["players"])
-app.include_router(predict.router, prefix="/api/v1/predict", tags=["predict"])
+app.include_router(manual_predict.router, prefix="/api/v1/predict", tags=["predict"])
 app.include_router(upcoming_matches.router, prefix="/api/v1/upcoming", tags=["Live Sync"])
 
 
