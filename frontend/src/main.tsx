@@ -4,7 +4,5 @@ import './index.css' // 🎯 CRITICAL: This must be here!
 import App from './App'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
     <App />
-  </React.StrictMode>,
 )

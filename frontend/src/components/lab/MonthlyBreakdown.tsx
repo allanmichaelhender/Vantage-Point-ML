@@ -4,7 +4,7 @@ export function MonthlyBreakdown({ data }: { data: any[] }) {
   return (
     <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl h-[400px]">
       <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-6">
-        Monthly Profit & Loss (USD)
+        Monthly Profit & Loss (GBP)
       </h3>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>

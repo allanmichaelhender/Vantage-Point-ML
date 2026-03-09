@@ -137,7 +137,7 @@ class LLMService:
   
         prompt = """
 <task>
-  You are a Tennis Data Quant. Cross-reference the <live_markets> against the <elite_player_db> to select the 20 most statistically significant matches.
+  You are a Tennis Data Quant. Cross-reference the <live_markets> against the <elite_player_db> to select the 6 most statistically significant matches.
 </task>
 
 <elite_player_db>
@@ -157,8 +157,8 @@ class LLMService:
 
 <selection_priority>
   1. Priority 1: BOTH players have an ID in the Elite DB.
-  2. Priority 2: ONE player is Elite and has a high Elo (>1900).
-  3. Priority 3: Competitive matches (odds for both players are between 1.5 and 2.5).
+  2. Priority 2: BOTH players are Elite and has a high Elo (>1800).
+  3. Priority 3: One players is Elite and has a high Elo (>1700).
 </selection_priority>
 
 <output_format>

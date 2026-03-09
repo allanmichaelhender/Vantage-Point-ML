@@ -8,6 +8,7 @@ from app.models.match import Match
 from app.models.player import Player
 from sqlalchemy import select
 import re
+from sqlalchemy import text
 
 
 def parse_atp_score(score_str):
@@ -79,7 +80,6 @@ async def ingest_csv_file(file_path: str):
             # 2. Vectorized cleaning for the chunk
             df_chunk = df_chunk.where(pd.notnull(df_chunk), None)
 
-
             # 3. List Comprehension for the 1,000-row "bite"
             matches_data = [
                 {
@@ -121,7 +121,6 @@ async def ingest_csv_file(file_path: str):
                     "l_bpFaced": clean_int(row.get("l_bpFaced")),
                     "loser_rank": clean_int(row.get("loser_rank")),
                     "loser_ranking_points": clean_int(row.get("loser_rank_points")),
-
                     # Accessing the unpacked tuple results
                     "is_retirement": res[0],
                     "total_games": res[1],
@@ -140,12 +139,51 @@ async def ingest_csv_file(file_path: str):
                 # 4. Bulk Upsert (Conflict is unlikely for matches, but safe to use)
                 stmt = insert(Match).values(matches_data).on_conflict_do_nothing()
                 await session.execute(stmt)
+
+                # Inserting player names
+                query = text("""
+
+UPDATE matches 
+SET winner_name = players.player
+FROM players
+WHERE matches.winner_id = players.id 
+  AND matches.winner_name IS NULL;
+
+UPDATE matches 
+SET loser_name = players.player
+FROM players
+WHERE matches.loser_id = players.id 
+  AND matches.loser_name IS NULL;
+    """)
+
+                result = await session.execute(query)
+
                 await session.commit()
 
                 total += len(matches_data)
                 print(f"📦 {file_path}: {total} matches synced...")
 
     print(f"✅ Ingestion Complete for {file_path}")
+
+
+async def hydrate_match_names(self, session):
+    print("🧬 Hydrating match names from player registry...")
+
+    # 🎯 This SQL maps the IDs to Names using your existing player_states table
+    query = text("""
+        UPDATE matches 
+        SET 
+            winner_name = p1.player_name,
+            loser_name = p2.player_name
+        FROM player_states p1, player_states p2
+        WHERE matches.winner_id = p1.player_id 
+          AND matches.loser_id = p2.player_id
+          AND (matches.winner_name IS NULL OR matches.loser_name IS NULL);
+    """)
+
+    result = await session.execute(query)
+    await session.commit()
+    print(f"✅ Successfully mapped names for {result.rowcount} matches.")
 
 
 async def main():

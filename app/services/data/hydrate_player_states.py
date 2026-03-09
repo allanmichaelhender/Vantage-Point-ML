@@ -9,7 +9,6 @@ class StateHydrator:
 
     async def run_master_pluck(self, session):
         print("📊 Phase 1: Plucking Global Stats & Identity...")
-        # Your 11-column SQL goes here
         query = text("""
             INSERT INTO player_states (
                 player_id, player_name, current_elo, last_match_date,
@@ -44,6 +43,7 @@ class StateHydrator:
         """)
         await session.execute(query)
         await session.commit()
+
 
     async def run_surface_paint(self, session):
         print("🎾 Phase 2: Setting Surface Defaults and Painting Data...")

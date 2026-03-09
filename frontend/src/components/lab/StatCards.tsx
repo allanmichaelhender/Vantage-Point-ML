@@ -5,7 +5,7 @@ export function StatCards({ summary }: { summary: PerformanceSummary }) {
     { label: 'Total ROI', value: `${(summary.roi * 100).toFixed(2)}%`, color: summary.roi >= 0 ? 'text-green-400' : 'text-red-400' },
     { label: 'Brier Score', value: summary.brier_score.toFixed(4), color: 'text-blue-400' },
     { label: 'Win Rate', value: `${(summary.win_rate * 100).toFixed(1)}%`, color: 'text-slate-100' },
-    { label: 'Profit', value: `$${summary.total_profit.toFixed(2)}`, color: summary.total_profit >= 0 ? 'text-green-400' : 'text-red-400' },
+    { label: 'Profit', value: `£${summary.total_profit.toFixed(2)}`, color: summary.total_profit >= 0 ? 'text-green-400' : 'text-red-400' },
   ];
 
   return (
