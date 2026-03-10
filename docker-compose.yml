@@ -82,9 +82,19 @@ services:
     volumes:
       - ./frontend/dist:/usr/share/nginx/html:ro
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
     depends_on:
       - tennis_api
       - frontend
+
+  certbot:
+    image: certbot/certbot
+    container_name: tennis_certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+
 
 
 volumes:
