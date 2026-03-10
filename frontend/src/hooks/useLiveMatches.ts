@@ -2,6 +2,16 @@
 import { useState, useEffect, useRef } from 'react'; 
 import api from '../services/api';
 
+export interface LiveMatch {
+  id: string;
+  player1: string;
+  player2: string;
+  p1_prob: number;
+  p2_prob: number;
+  commence_time: string;
+}
+
+
 export function useLiveMatches() {
   const [matches, setMatches] = useState<LiveMatch[]>([]);
   const [status, setStatus] = useState<'fresh' | 'revalidating' | 'loading'>('loading');

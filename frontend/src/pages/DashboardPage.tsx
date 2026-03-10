@@ -1,21 +1,18 @@
 import { useState } from "react";
-import { Plus, Zap, Filter, TrendingUp, Info } from "lucide-react";
+import { Plus, Zap} from "lucide-react";
 import { PredictModal } from "../components/dashboard/PredictModal";
 import { MatchCard } from "../components/dashboard/MatchCard";
 import { useLiveMatches } from "../hooks/useLiveMatches";
 
 export default function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showOnlyValue, setShowOnlyValue] = useState(false);
   const { matches, status, lastSync, error } = useLiveMatches();
   const [manualPredictions, setManualPredictions] = useState<any[]>([]);
 
 
 
   // Filter logic for "Edge" (Value Bets)
-  const displayedMatches = showOnlyValue
-    ? matches.filter((m) => (m.model_prob - m.bookie_prob) * 100 > 3)
-    : matches.slice(0, 20);
+  const displayedMatches = matches;
 
   return (
     <div className="p-8 max-w-7xl mx-auto">

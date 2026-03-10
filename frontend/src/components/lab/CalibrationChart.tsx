@@ -32,7 +32,7 @@ export function CalibrationChart({ data }: { data: any[] }) {
           <Tooltip 
             cursor={{ strokeDasharray: '3 3' }} 
             contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
-            formatter={(val: number) => [`${(val * 100).toFixed(1)}%`]}
+            formatter={(val: any) => [`$${Number(val).toLocaleString()}`]}
           />
           
           {/* The Perfect Calibration Line (Diagonal) */}
