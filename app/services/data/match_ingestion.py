@@ -164,6 +164,7 @@ WHERE matches.loser_id = players.id
                 print(f"📦 {file_path}: {total} matches synced...")
 
     print(f"✅ Ingestion Complete for {file_path}")
+    return total
 
 
 async def hydrate_match_names(self, session):
@@ -188,15 +189,22 @@ async def hydrate_match_names(self, session):
 
 async def main():
     DATA_DIR = "/project/app/tml-data"
-    # Filter for files like 2010.csv, 2011.csv ... 2026.csv
     years = [f"{year}.csv" for year in range(2010, 2027)]
+    
+    grand_total = 0 # 🎯 Initialize grand total
 
     for filename in years:
         file_path = os.path.join(DATA_DIR, filename)
         if os.path.exists(file_path):
-            await ingest_csv_file(file_path)
+            # 🎯 Capture the count from the function
+            count = await ingest_csv_file(file_path)
+            grand_total += count
 
-    print("🏁 Bulk Ingestion Complete.")
+    print("\n" + "="*30)
+    print(f"🏁 ALL-TIME INGESTION COMPLETE")
+    print(f"📊 Total Matches in Database: {grand_total}")
+    print("="*30)
+
 
 
 if __name__ == "__main__":

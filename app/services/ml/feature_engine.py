@@ -58,7 +58,7 @@ def calculate_elo_change(w_elo, l_elo, k=32):
 async def run_feature_engine():
     async with async_session() as session:
         print("📡 Loading matches from DB...")
-        stmt = select(Match).order_by(Match.tourney_date, Match.match_num)
+        stmt = select(Match).order_by(Match.tourney_date.asc(), Match.id.asc())
         result = await session.execute(stmt)
         matches = result.scalars().all()
         
