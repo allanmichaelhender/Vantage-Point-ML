@@ -93,17 +93,14 @@ class FeatureAssembler:
         with torch.no_grad():
             p1_emb = self.encoder.player_embed(p1_idx).numpy()
             p2_emb = self.encoder.player_embed(p2_idx).numpy()
+            surf_emb= self.encoder.surface_embed(surf_idx)
 
-        # Combine into the 61-feature vector (26 stats + 16 p1 + 16 p2 + 3 surface/level)
-        # Note: Ensure the stack order matches your train_xgboost.py exactly!
-        final_vector = np.hstack([scaled_stats, p1_emb, p2_emb])
+        final_vector = np.hstack([scaled_stats, p1_emb, p2_emb, surf_emb])
         
         return final_vector
     
     def assemble_manual(self, p1_id, p2_id, surface, stats_dict, flip=False):
-        """
-        Assembles a 61-feature vector from IDs and a dictionary of stats.
-        """
+
         import torch
         import numpy as np
 
@@ -112,10 +109,13 @@ class FeatureAssembler:
             # We use the LabelEncoder to get the 'Seat Number' for the NN
             p1_idx = torch.tensor([self.player_le.transform([p1_id])[0]], dtype=torch.long)
             p2_idx = torch.tensor([self.player_le.transform([p2_id])[0]], dtype=torch.long)
+            surf_idx = torch.tensor([self.surface_le.transform([m.surface])[0]], dtype=torch.long)
+
             
             with torch.no_grad():
                 p1_emb = self.encoder.player_embed(p1_idx).numpy()
                 p2_emb = self.encoder.player_embed(p2_idx).numpy()
+                surf_emb = self.encoder.surface_embed(surf_idx)
         except (ValueError, KeyError):
             # If a player is too new and not in the Encoder, we use a Zero-vector
             p1_emb = np.zeros((1, 16))
@@ -129,6 +129,6 @@ class FeatureAssembler:
         # 3. Concatenate into the final 61-feature row
         if flip:
             # If flipping, we swap the stats AND the style vectors
-            return np.hstack([scaled_stats, p2_emb, p1_emb])
+            return np.hstack([scaled_stats, p2_emb, p1_emb, surf_emb])
         
-        return np.hstack([scaled_stats, p1_emb, p2_emb])
+        return np.hstack([scaled_stats, p1_emb, p2_emb, surf_emb])
