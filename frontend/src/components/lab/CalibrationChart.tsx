@@ -50,15 +50,6 @@ export function CalibrationChart({ data }: { data: CalibrationPoint[] }) {
             }}
           />
 
-          {/* 🎯 Perfect Calibration Line (The 'Ideal' Path) */}
-          <Line 
-            type="monotone" 
-            dataKey="avg_predicted" 
-            stroke="#475569" 
-            strokeDasharray="5 5" 
-            dot={false} 
-          />
-
           {/* 🎯 Actual Performance Area */}
           <Area
             name="actual_win_rate"
