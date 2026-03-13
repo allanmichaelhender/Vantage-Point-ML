@@ -3,11 +3,11 @@ from sqlalchemy import select
 from app.database.session import async_session
 from app.models.player_state import PlayerState
 from sqlalchemy import desc
-from api.deps import get_api_key
+from app.api.deps import get_api_key
 from app.schemas.player import Players
 from typing import List
 
-router = APIRouter(dependencies=Security(get_api_key))
+router = APIRouter(dependencies=[Security(get_api_key)])
 
 # Endpoint to give the frontend a list of players
 @router.get("/search", response_model=List[Players])
