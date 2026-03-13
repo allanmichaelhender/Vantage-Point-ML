@@ -5,7 +5,7 @@ class TennisEncoder(nn.Module):
     def __init__(self, num_players, num_surfaces, input_dim, embedding_dim=16):
         super(TennisEncoder, self).__init__() # Running the parent init
         
-        # Creating our lookup table to go from players to respective embedding
+        # Creating our lookup table to go from players to respective embedding value
         self.player_embed = nn.Embedding(num_players, embedding_dim)
 
         # We are going to embed every surface as a 4D vector to allow for complex interactions

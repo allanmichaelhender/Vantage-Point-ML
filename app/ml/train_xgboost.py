@@ -7,55 +7,51 @@ import joblib
 def train_xgboost():
     print("📡 Loading Super-Dataset...")
     df = pd.read_parquet('app/ml/data/final_training_set.parquet')
-
-    # 1. THE TIME-SERIES SPLIT (The "Honesty" Check)
-    # Convert to datetime if it's not already
-    df['tourney_date'] = pd.to_datetime(df['tourney_date'])
     
     # Train on everything before 2025
     train_df = df[df['tourney_date'] < '2025-01-01']
-    # Test on everything 2025 and 2026
+    # Test on everything in 2025 and 2026
     test_df = df[df['tourney_date'] >= '2025-01-01']
 
+    # Dropping down to the required features
     features = [c for c in df.columns if c not in [
         'p1_id', 'p2_id', 'p1_id_idx', 'p2_id_idx', 'surface', 
-        'surface_idx', 'target', 'tourney_date' # REMOVE DATE FROM FEATURES
+        'surface_idx', 'target', 'tourney_date'
     ]]
     
     X_train, y_train = train_df[features], train_df['target']
     X_test, y_test = test_df[features], test_df['target']
 
-    print(f"📈 Training on {len(X_train)} matches (Pre-2025)")
-    print(f"🔮 Testing on {len(X_test)} matches (2025-2026)")
 
-    # 3. Initialize XGBoost
+    # Initialize XGBoost
     model = xgb.XGBClassifier(
-        n_estimators=1000,
-        learning_rate=0.05,
-        max_depth=6,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        objective='binary:logistic',
-        early_stopping_rounds=50,
-        random_state=42
+        n_estimators=2000, # Max number of decision trees
+        learning_rate=0.02,
+        max_depth=6, # Depth of each tree
+        subsample=0.8, # Every tree can see this proportion of the training data
+        colsample_bytree=0.6, # Every tree can see this proportion of the cols/features
+        objective='binary:logistic', # Sets the type of problem for the model to solve
+        early_stopping_rounds=100, # Smallest number of trees
+        random_state=42, # Locking in a random state to be consistent
+        tree_method='hist', # Faster training
     )
 
     # 4. Fit with Early Stopping
     model.fit(
         X_train, y_train,
         eval_set=[(X_test, y_test)],
-        verbose=100
+        verbose=100 # Frequency of updates in terminal, per 100 trees
     )
 
-    # 5. Evaluate
-    preds = model.predict(X_test)
-    acc = accuracy_score(y_test, preds)
+    # Evaluate
+    predictions = model.predict(X_test)
+    accuracy = accuracy_score(y_test, predictions)
     
     print("\n--- Final Performance ---")
-    print(f"✅ Accuracy: {acc:.2%}")
-    print(classification_report(y_test, preds))
+    print(f"✅ Accuracy: {accuracy:.2%}")
+    print(classification_report(y_test, predictions))
 
-    # 6. Save the Final Model
+    # Save the Final Model
     joblib.dump(model, 'app/ml/models/final_xgboost_model.pkl')
     # Save the list of feature names so the API knows the exact order later
     joblib.dump(features, 'app/ml/models/feature_names.pkl')
