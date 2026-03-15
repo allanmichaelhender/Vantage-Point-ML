@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Date, Float, ForeignKey
+from sqlalchemy import String, Date, Float, ForeignKey, Integer
 from sqlalchemy.dialects.postgresql import JSONB
 from datetime import date
 from app.models.base import Base
@@ -11,19 +11,16 @@ class PlayerState(Base):
     player_id: Mapped[str] = mapped_column(ForeignKey("players.id"), primary_key=True)
     player_name: Mapped[str] = mapped_column(String(150), index=True)
 
-    # Power - General is Required, others are Optional
     current_elo: Mapped[float | None] = mapped_column(Float, default=1500.0)
     current_hard_elo: Mapped[float | None] = mapped_column(Float)
     current_clay_elo: Mapped[float | None] = mapped_column(Float)
     current_grass_elo: Mapped[float | None] = mapped_column(Float)
 
-    # Timing - General is Required, others are Optional
     last_match_date: Mapped[date | None] = mapped_column(Date)
     last_hard_match_date: Mapped[date | None] = mapped_column(Date)
     last_clay_match_date: Mapped[date | None] = mapped_column(Date)
     last_grass_match_date: Mapped[date | None] = mapped_column(Date)
 
-    # Form - All Optional for now to prevent "Pluck" crashes
     rolling_match_win_pct: Mapped[float | None] = mapped_column(Float)
     rolling_game_win_pct: Mapped[float | None] = mapped_column(Float)
     rolling_serve_won_pct: Mapped[float | None] = mapped_column(Float)
@@ -33,3 +30,5 @@ class PlayerState(Base):
     rolling_return_won_pct: Mapped[float | None] = mapped_column(Float)
     
     current_tournament_fatigue: Mapped[float | None] = mapped_column(Float, server_default="0.0", default=0.0)
+
+    matches_played: Mapped[int | None] = mapped_column(Integer)

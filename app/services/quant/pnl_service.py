@@ -39,6 +39,8 @@ class PNLService:
                     (Match.ps_w.isnot(None)) | (Match.b365_w.isnot(None)),
                     Match.w_elo_before.isnot(None),
                     Match.tourney_date >= cutoff_date,
+                    Match.w_matches_played >= 10,
+                    Match.l_matches_played >= 10
                 )
                 .order_by(Match.tourney_date, Match.match_num)
             )
@@ -102,8 +104,8 @@ class PNLService:
                     "bet_on": bet_on,        # Will be "None", "P1", or "P2"
                     "bet_amount": bet_amount, # Will be 0 if no bet
                     "is_win": is_win,         # Only meaningful if bet_placed
-                    "actual_winner": "P1",    # In your DB, P1 is always the winner
-                    "p1_prob": p1_prob,       # THE RAW BRAIN DATA
+                    "actual_winner": "P1",    # In the DB, P1 is always the winner
+                    "p1_prob": p1_prob,       
                     "p2_prob": p2_prob,
                     "p1_odds": p1_odds,
                     "p2_odds": p2_odds,
@@ -133,9 +135,5 @@ class PNLService:
 
 
 if __name__ == "__main__":
-    # SET THE SEED: This ensures 'random.choice' picks the same sequence every time
-    # random.seed(42)
-    # np.random.seed(42)
-
     service = PNLService()
     asyncio.run(service.run_backtest())

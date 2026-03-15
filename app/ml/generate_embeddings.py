@@ -29,12 +29,6 @@ def generate_final_dataset():
 
         # Same for 4 feature surface embeddings
         surface_embedding_matrix = model.surface_embed.weight.data.numpy()
-        
-   
-    # p1_embeddings = []
-    # for idx in df['p1_id_idx'].values:
-    #     row = player_embedding_matrix[idx]
-    #     p1_embeddings.append(row)
 
     # Fancy indexing to make a make an array where each row a player's 16 dim embedding
     p1_embeddings = player_embedding_matrix[df['p1_id_idx'].values]

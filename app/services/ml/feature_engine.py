@@ -245,7 +245,7 @@ async def run_feature_engine():
             last_surface = last_match['surface']
 
             # Run get snapshots to include the last game
-            m_win, g_win, off, s_off, ace, bp, fat, sv_won, df_pp = p_obj.get_snapshots(
+            m_win, g_win, off, s_off, ace, bp, fat, sv_won, df_pp, matches_played = p_obj.get_snapshots(
                 p_obj.last_match_date, 
                 last_surface
             )
@@ -273,7 +273,9 @@ async def run_feature_engine():
                     "rolling_bp_save_pct": bp,
                     "rolling_return_won_pct": 1.0 - sv_won,
                     
-                    "current_tournament_fatigue": fat
+                    "current_tournament_fatigue": fat,
+
+                    "matches_played": matches_played
                 })
 
         # 2. Perform the FINAL BULK UPSERT

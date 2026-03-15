@@ -24,6 +24,7 @@ class TennisDataProcessor:
         # Creating a syncronous engine
         sync_engine = create_engine(db_url)
         
+        # We select every game where both players have 10 recorded games (helps elo calculations and rolling stats) and remove retirments
         query = """
             SELECT 
                 tourney_date,
@@ -41,9 +42,9 @@ class TennisDataProcessor:
                 l_rolling_df_per_pt, l_rolling_bp_save_pct,
                 l_rolling_return_won_pct, l_tournament_fatigue
             FROM matches 
-            WHERE w_elo_before IS NOT NULL 
-            AND l_elo_before IS NOT NULL
-            AND is_retirement = FALSE
+            WHERE is_retirement = FALSE
+            AND w_matches_played >= 10
+            AND l_matches_played >= 10
         """
         
         return pd.read_sql(query, sync_engine)
