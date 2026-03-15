@@ -30,7 +30,7 @@ export interface CalibrationPoint {
 export interface EdgeBucket {
   range: string;     // e.g., "2-4%"
   roi: number;       // e.g., 0.08
-  count: number;     // How many bets fell in this edge range
+  match_count: number;     // How many bets fell in this edge range
 }
 
 // Update your main response interface

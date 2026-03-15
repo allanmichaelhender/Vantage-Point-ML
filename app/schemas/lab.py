@@ -25,9 +25,7 @@ class ModelPerformanceResponse(BaseModel):
 class EdgeBucket(BaseModel):
     bucket: str
     roi: float
-    brier_score: float
     match_count: int
-    avg_edge: float
 
 class CalibrationPoint(BaseModel):
     prob_bucket: str

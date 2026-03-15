@@ -3,8 +3,8 @@ import { X, Zap, Loader2, Trophy, Search, User } from "lucide-react";
 import api from "../../services/api";
 
 interface Player {
-  id: string;
-  name: string;
+  player_id: string;
+  player_name: string;
 }
 
 interface PredictionResult {
@@ -67,8 +67,8 @@ export function PredictModal({
     setLoading(true);
     try {
       const response = await api.post("/predict/manual-predict", {
-        p1_id: p1Selected?.id,
-        p2_id: p2Selected?.id,
+        p1_id: p1Selected?.player_id,
+        p2_id: p2Selected?.player_id,
         surface: surface,
       });
 
@@ -128,7 +128,7 @@ export function PredictModal({
                     size={16}
                   />
                   <input
-                    value={p1Selected ? p1Selected.name : p1Query}
+                    value={p1Selected ? p1Selected.player_name : p1Query}
                     onChange={(e) => {
                       setP1Query(e.target.value);
                       setP1Selected(null);
@@ -141,7 +141,7 @@ export function PredictModal({
                   <div className="absolute z-10 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl max-h-48 overflow-y-auto shadow-2xl">
                     {p1Results.map((p) => (
                       <button
-                        key={p.id}
+                        key={p.player_id}
                         type="button"
                         onClick={() => {
                           setP1Selected(p);
@@ -149,7 +149,7 @@ export function PredictModal({
                         }}
                         className="w-full px-4 py-3 text-left hover:bg-blue-600 text-sm flex items-center gap-2"
                       >
-                        <User size={14} /> {p.name}
+                        <User size={14} /> {p.player_name}
                       </button>
                     ))}
                   </div>
@@ -167,7 +167,7 @@ export function PredictModal({
                     size={16}
                   />
                   <input
-                    value={p2Selected ? p2Selected.name : p2Query}
+                    value={p2Selected ? p2Selected.player_name : p2Query}
                     onChange={(e) => {
                       setP2Query(e.target.value);
                       setP2Selected(null);
@@ -180,7 +180,7 @@ export function PredictModal({
                   <div className="absolute z-10 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl max-h-48 overflow-y-auto shadow-2xl">
                     {p2Results.map((p) => (
                       <button
-                        key={p.id}
+                        key={p.player_id}
                         type="button"
                         onClick={() => {
                           setP2Selected(p);
@@ -188,7 +188,7 @@ export function PredictModal({
                         }}
                         className="w-full px-4 py-3 text-left hover:bg-blue-600 text-sm flex items-center gap-2"
                       >
-                        <User size={14} /> {p.name}
+                        <User size={14} /> {p.player_name}
                       </button>
                     ))}
                   </div>

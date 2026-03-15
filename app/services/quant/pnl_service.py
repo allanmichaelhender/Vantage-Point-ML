@@ -1,8 +1,6 @@
 import pandas as pd
 import joblib
-import numpy as np
 import asyncio
-import random
 from sqlalchemy import select
 from app.database.session import async_session
 from app.models.match import Match
@@ -32,7 +30,7 @@ class PNLService:
         print(f"💰 Starting Full-Tour Backtest from {cutoff_date}...")
 
         async with async_session() as session:
-            # 1. Fetch matches with any odds (PS preferred, B365 fallback)
+            # Fetch matches with any odds (PS preferred, B365 fallback)
             stmt = (
                 select(Match)
                 .where(
@@ -52,8 +50,7 @@ class PNLService:
             current_balance = self.bankroll
 
             for m in matches:
-                # 2. SYMMETRIC INFERENCE (The "Double Check")
-                # Get both perspectives to cancel out positional bias
+                # We use symmetric inference
                 x_norm = self.assembler.assemble_match(m, flip=False)
                 x_flip = self.assembler.assemble_match(m, flip=True)
 
@@ -67,35 +64,35 @@ class PNLService:
                 p1_prob = (p1_v1 + p1_v2) / 2
                 p2_prob = 1.0 - p1_prob
 
-                # 3. SELECT ODDS
+                # Selecting market odds
                 p1_odds = m.ps_w if m.ps_w else m.b365_w
                 p2_odds = m.ps_l if m.ps_l else m.b365_l
 
-                # 4. BETTING LOGIC (Keep your +0.05 filter here for ROI)
+                # Betting logic
                 bet_placed = False
                 is_win = False
                 pnl = 0
-                bet_on = "None" # 🎯 Default to None
+                bet_on = "None"
                 bet_amount = 0
 
-                if p1_prob > (1 / p1_odds) + 0.05:
+                if p1_prob > (1 / p1_odds): # + 0.05:
                     bet_amount = current_balance * self.get_bet_size(p1_prob, p1_odds)
                     pnl = (p1_odds - 1) * bet_amount
                     is_win = True
                     bet_on = "P1"
                     bet_placed = True
-                elif p2_prob > (1 / p2_odds) + 0.05:
+                elif p2_prob > (1 / p2_odds): # + 0.05:
                     bet_amount = current_balance * self.get_bet_size(p2_prob, p2_odds)
                     pnl = -bet_amount
                     is_win = False
                     bet_on = "P2"
                     bet_placed = True
 
-                # 5. UPDATE BANKROLL & LOG EVERYTHING
+                # Update balance
                 if bet_placed:
                     current_balance += pnl
 
-                # 🎯 RECORD EVERY MATCH REGARDLESS OF BET
+                # We record every game regarless of whether we bet or not
                 history.append({
                     "date": m.tourney_date,
                     "match_id": m.id,
@@ -111,15 +108,15 @@ class PNLService:
                     "p2_odds": p2_odds,
                     "pnl": pnl,
                     "balance": current_balance,
+                    "surface": m.surface
                 })
          
-            # 6. RESULTS
+            # Results
             results_df = pd.DataFrame(history)
             results_df.to_csv("app/ml/data/betting_results.csv", index=False)
 
             print("🏁 Backtest Finished.")
             print(f"📈 Final Bankroll: £{current_balance:.2f}")
-            print(f"📊 Total Bets: {len(history)}")
 
             total_wagered = sum(h["bet_amount"] for h in history)
             total_profit = current_balance - self.bankroll

@@ -9,9 +9,13 @@ def train_xgboost():
     df = pd.read_parquet('app/ml/data/final_training_set.parquet')
     
     # Train on everything before 2025
-    train_df = df[df['tourney_date'] < '2025-01-01']
-    # Test on everything in 2025 and 2026
-    test_df = df[df['tourney_date'] >= '2025-01-01']
+    train_df = df[df['tourney_date'] < '2024-07-01']
+
+
+    test_df = df[(df['tourney_date'] >= '2024-07-01') & (df['tourney_date'] < '2025-01-01')]
+    
+    # Only for evaluation after training
+    excluded_df = df[df['tourney_date'] >= '2025-01-01']
 
     # Dropping down to the required features
     features = [c for c in df.columns if c not in [
@@ -21,6 +25,7 @@ def train_xgboost():
     
     X_train, y_train = train_df[features], train_df['target']
     X_test, y_test = test_df[features], test_df['target']
+    X_excluded, y_excluded = excluded_df[features], excluded_df['target']
 
 
     # Initialize XGBoost
@@ -44,12 +49,12 @@ def train_xgboost():
     )
 
     # Evaluate
-    predictions = model.predict(X_test)
-    accuracy = accuracy_score(y_test, predictions)
+    predictions = model.predict(X_excluded)
+    accuracy = accuracy_score(y_excluded, predictions)
     
     print("\n--- Final Performance ---")
     print(f"✅ Accuracy: {accuracy:.2%}")
-    print(classification_report(y_test, predictions))
+    print(classification_report(y_excluded, predictions))
 
     # Save the Final Model
     joblib.dump(model, 'app/ml/models/final_xgboost_model.pkl')

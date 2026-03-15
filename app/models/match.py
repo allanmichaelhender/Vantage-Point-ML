@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, DateTime, ForeignKey, Integer, Boolean, Float
+from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime
 from app.models.base import Base
 
@@ -106,3 +107,6 @@ class Match(Base):
     b365_l: Mapped[float | None] = mapped_column(Float)
     ps_w: Mapped[float | None] = mapped_column(Float)
     ps_l: Mapped[float | None] = mapped_column(Float)
+
+    w_embedding: Mapped[list[float] | None] = mapped_column(JSONB)
+    l_embedding: Mapped[list[float] | None] = mapped_column(JSONB)

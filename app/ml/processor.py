@@ -113,7 +113,6 @@ class TennisDataProcessor:
         
         # Scaling Continuous Features
         cont_cols = [c for c in combined_df.columns if c.startswith(('p1_', 'p2_')) and not c.endswith('_id') and not c.endswith('_idx')]
-        print(len(cont_cols))
         combined_df[cont_cols] = self.scaler.fit_transform(combined_df[cont_cols])
 
         # Remember, our data is p1 wins first half, p2 wins second half, this line randomises the order to remove ordering bias

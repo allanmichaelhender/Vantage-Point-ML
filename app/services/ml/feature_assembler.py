@@ -89,3 +89,36 @@ class FeatureAssembler:
         final_vector = np.hstack([scaled_stats, p1_emb, p2_emb, surf_emb]) # hstack = horizontal stack
         
         return final_vector
+
+    def assemble_manual(self, p1_id, p2_id, surface, stats_dict, flip=False):
+
+        import torch
+        import numpy as np
+
+        try:
+            p1_idx = torch.tensor([self.player_le.transform([p1_id])[0]], dtype=torch.long)
+            p2_idx = torch.tensor([self.player_le.transform([p2_id])[0]], dtype=torch.long)
+            surf_idx = torch.tensor([self.surface_le.transform([surface])[0]], dtype=torch.long)
+
+            
+            with torch.no_grad():
+                p1_emb = self.encoder.player_embed(p1_idx).numpy()
+                p2_emb = self.encoder.player_embed(p2_idx).numpy()
+                surf_emb = self.encoder.surface_embed(surf_idx)
+
+        except (ValueError, KeyError):
+            # If a player is too new and not in the Encoder, we use a zero-vector
+            p1_emb = np.zeros((1, 16))
+            p2_emb = np.zeros((1, 16))
+
+        
+        # EXPECTED_FEATURES ensures the order is correct for the Scaler
+        stats_df = pd.DataFrame([stats_dict])[EXPECTED_FEATURES].fillna(0)
+        scaled_stats = self.scaler.transform(stats_df)
+
+        
+        if flip:
+            # If flipping, we swap the embeddings
+            return np.hstack([scaled_stats, p2_emb, p1_emb, surf_emb])
+        
+        return np.hstack([scaled_stats, p1_emb, p2_emb, surf_emb])

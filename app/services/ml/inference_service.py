@@ -66,7 +66,6 @@ class InferenceService:
         p2_stats = p2_row
 
         def get_vec(p1_stats, p2_stats, flip=False):
-            # This order must match your Scaler's EXPECTED_FEATURES exactly
             data = {
                 "p1_elo": p1_stats.current_elo,
                 "p2_elo": p2_stats.current_elo,
@@ -125,11 +124,12 @@ class InferenceService:
                 "p2_ret_won": p2_stats.rolling_return_won_pct,
                 "p2_fatigue": p2_stats.current_tournament_fatigue,
             }
-            # Use the assembler to get embeddings and final 61-feature vector
+            # Use the assembler to get vector for model to infer from
             return assembler.assemble_manual(
                 p1_row.player_id, p2_row.player_id, surface, data, flip=flip
             )
 
+        # We run twice with p1 and p2 reversed
         vec_norm = get_vec(p1_stats, p2_stats, flip=False)
         vec_flip = get_vec(p1_stats, p2_stats, flip=True)
 

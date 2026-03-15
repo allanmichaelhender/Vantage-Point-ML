@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
 class Players(BaseModel):
-    player_id: int
+    player_id: str
     player_name: str
 
     # Pydantic expects dictonaries, this line allows Pydnatic to use object attributes to extract variables

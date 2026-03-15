@@ -10,6 +10,14 @@ from app.ml.tennis_encoder import TennisEncoder
 def train_encoder():
     # Loading in the data, remember we use pkl to load in DF more seamlessly
     df = pd.read_pickle('app/ml/data/processed_training_data.pkl')
+
+    df['tourney_date'] = pd.to_datetime(df['tourney_date'])
+    df = df[
+    #(df['tourney_date'] >= '2023-01-01') & 
+    (df['tourney_date'] < '2025-01-01')
+].copy()
+    
+    print(f"📅 Training NN Encoder on matches BEFORE 2025. Rows: {len(df)}")
     
     # Categorical Indexes
     p1_idx = torch.tensor(df['p1_id_idx'].values, dtype=torch.long)
@@ -28,7 +36,6 @@ def train_encoder():
     performance_stats = torch.tensor(df[cont_cols].values, dtype=torch.float32)
 
     input_dim = performance_stats.shape[1] # Number of input features
-    print(input_dim)
     
     # Target setup, unsqueeze turns it into a column to match dimensions
     target = torch.tensor(df['target'].values, dtype=torch.float32).unsqueeze(1)
