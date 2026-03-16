@@ -3,7 +3,7 @@ import numpy as np
 
 
 class LabService:
-    def __init__(self, file_path: str = "app/ml/data/betting_results.csv"):
+    def __init__(self, file_path: str = "app/ml/data/betting_results_XGBoost&NN.csv"):
         self.file_path = file_path
 
     async def get_model_performance(self):
@@ -152,4 +152,3 @@ class LabService:
         return calibration.to_dict(orient="records")
 
 
-lab_service = LabService()

@@ -1,5 +1,5 @@
-from pydantic import BaseModel
 from typing import List
+from pydantic import BaseModel
 
 class PerformanceSummary(BaseModel):
     roi: float          
@@ -17,10 +17,14 @@ class MonthlyStat(BaseModel):
     roi: float            
     profit: float         
 
-class ModelPerformanceResponse(BaseModel):
+class ModelProfile(BaseModel):
     summary: PerformanceSummary
     equity_curve: List[WeeklyPoint]
     monthly_breakdown: List[MonthlyStat]
+
+class ModelPerformanceResponse(BaseModel):
+    xgboost_nn: ModelProfile  
+    xgboost: ModelProfile 
 
 class EdgeBucket(BaseModel):
     bucket: str

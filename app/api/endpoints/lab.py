@@ -1,18 +1,29 @@
 from fastapi import APIRouter,  Security
 from app.api.deps import get_api_key
-from app.services.quant.lab_service import lab_service
+from app.services.quant.lab_service import LabService
 from app.schemas.lab import ModelPerformanceResponse, EdgeBucket, CalibrationPoint
 from typing import List
+import asyncio
 
 # We use security here, it does the same as depends but is specifically for this application
 router = APIRouter(
     dependencies=[Security(get_api_key)]
 )
 
+xgboost_nn_lab_service = LabService("app/ml/data/betting_results_XGBoost&NN.csv")
+xgboost_lab_service = LabService("app/ml/data/betting_results_XGBoost.csv")
+
 # Returns model performance
 @router.get("/model-performance", response_model=ModelPerformanceResponse)
 async def get_lab_stats():
-    return await lab_service.get_model_performance()
+    xgboost_nn_performance = xgboost_nn_lab_service.get_model_performance()
+    xgboost_performance = xgboost_lab_service.get_model_performance()
+
+    result_xgboost_nn, result_xbgoost = await asyncio.gather(xgboost_nn_performance, xgboost_performance)
+
+    return {"xgboost_nn": result_xgboost_nn, "xgboost": result_xbgoost}
+
+
 
 # Returns bucketed edge analysis on our model 
 @router.get("/edge-analysis", response_model=List[EdgeBucket])
