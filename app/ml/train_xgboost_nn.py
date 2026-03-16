@@ -1,4 +1,3 @@
-from asyncpg import FeatureNotSupportedError
 import pandas as pd
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
@@ -172,13 +171,9 @@ def train_xgboost():
     excluded_df = df[df['tourney_date'] >= '2025-01-01']
 
     # Dropping down to the required features
-    features = [
-            'p1_elo', 'p2_elo', 'p1_surf_elo', 'p2_surf_elo', 
-            'p1_days_off', 'p2_days_off', 'p1_surf_days_off', 'p2_surf_days_off',
-            'p1_m_win', 'p2_m_win', 'p1_g_win', 'p2_g_win',
-            'p1_sv_won', 'p1_ace_pg', 'p1_df_pp', 'p1_bp_s', 'p1_ret_won', 'p1_fatigue',
-            'p2_sv_won', 'p2_ace_pg', 'p2_df_pp', 'p2_bp_s', 'p2_ret_won', 'p2_fatigue'
-        ]
+    features = [c for c in df.columns if c not in [
+        'id', 'p1_id', 'p2_id', 'p1_id_idx', 'p2_id_idx', 'surface', 'target', 'tourney_date'
+    ]]
     
     X_train, y_train = train_df[features], train_df['target']
     X_test, y_test = test_df[features], test_df['target']
@@ -214,9 +209,10 @@ def train_xgboost():
     print(classification_report(y_excluded, predictions))
 
     # Save the Final Model
-    joblib.dump(XGBoost_model, 'app/ml/models/XGBoost.pkl')
+    joblib.dump(XGBoost_model, 'app/ml/models/XGBoost&NN.pkl')
     # Save the list of feature names so the API knows the exact order later
-    print("🏁 Final Model saved to app/ml/models/XGBoost.pkl")
+    joblib.dump(features, 'app/ml/models/feature_names.pkl')
+    print("🏁 Final Model saved to app/ml/models/XGBoost&NN.pkl")
 
     # Get feature importance
     importance = XGBoost_model.feature_importances_

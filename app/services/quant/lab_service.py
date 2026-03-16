@@ -78,12 +78,12 @@ class LabService:
         bet_df["bet_prob"] = np.where(
             bet_df["bet_on"] == "P1", bet_df["p1_prob"], bet_df["p2_prob"]
         )  # Saying if true, use p1 prob, if false, p2_prob
-        bet_df["bet_odds"] = np.where(
-            bet_df["bet_on"] == "P1", bet_df["p1_odds"], bet_df["p2_odds"]
+        bet_df["bet_market"] = np.where(
+            bet_df["bet_on"] == "P1", bet_df["p1_market"], bet_df["p2_market"]
         )
 
         # Making edge column
-        bet_df["edge"] = bet_df["bet_prob"] - (1 / bet_df["bet_odds"])
+        bet_df["edge"] = bet_df["bet_prob"] - (1 / bet_df["bet_market"])
 
         # Defining the buckets
         bins = [0, 0.029, 0.049, 0.07, 0.10, 0.15, 1.0]

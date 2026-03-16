@@ -6,7 +6,7 @@ from app.services.ml.feature_assembler import FeatureAssembler
 import joblib
 
 assembler = FeatureAssembler()
-model = joblib.load("app/ml/models/final_xgboost_model.pkl")
+model = joblib.load("app/ml/models/XGBoost&NN.pkl")
 
 
 class InferenceService:

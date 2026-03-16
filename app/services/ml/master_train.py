@@ -4,8 +4,9 @@ import pandas as pd
 from app.ml.processor import TennisDataProcessor
 from app.ml.train_encoder import train_encoder 
 from app.services.ml.hydrate_embeddings import main as hydrate_embeddings 
-from app.ml.train_xgboost import train_xgboost
-from app.services.quant.pnl_service import PNLService 
+from app.ml.train_xgboost_nn import train_xgboost as train_XGBoost_NN
+from app.ml.train_xgboost import train_xgboost as train_XGBoost
+from app.services.quant.pnl_service import service1, service2
 
 
 async def run_unified_pipeline():
@@ -40,16 +41,22 @@ async def run_unified_pipeline():
 
         # --- 4. TRAIN XGBOOST ---
         # Pulls the stitched DNA from the DB and trains the final classifier
-        print("\n🚀 STEP 4: Training Final XGBoost Classifier...")
-        train_xgboost()
-        print("✅ Step 4 Complete. XGBoost model ready.")
+        print("\n🚀 STEP 4: Training Final XGBoost and NN Classifier...")
+        train_XGBoost_NN()
+        print("✅ Step 4 Complete. XGBoost and NN model ready.")
+        
+        # --- 4. TRAIN XGBOOST ---
+        # Pulls the stitched DNA from the DB and trains the final classifier
+        print("\n🚀 STEP 5: Training  XGBoost Classifier...")
+        train_XGBoost()
+        print("✅ Step 5 Complete. XGBoost model ready.")
 
         # --- 5. P&L ANALYSIS ---
         # Backtests the 2025/2026 predictions against market odds
-        print("\n💰 STEP 5: Calculating Historical P&L Performance...")
-        service = PNLService()
-        await service.run_backtest()
-        print("✅ Step 5 Complete. Performance metrics generated.")
+        print("\n💰 STEP 6: Calculating Historical P&L Performance...")
+        await service1.run_backtest()
+        await service2.run_backtest()
+        print("✅ Step 6 Complete. Performance metrics generated.")
 
     except Exception as e:
         print(f"\n❌ PIPELINE FAILED at Line {sys.exc_info()[-1].tb_lineno}:")

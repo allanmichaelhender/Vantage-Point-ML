@@ -38,11 +38,10 @@ class FeatureAssembler:
         p1_id = match.loser_id if flip else match.winner_id
         p2_id = match.winner_id if flip else match.loser_id
         
-        
-        # Grabbing the embedding indexes
-        p1_idx = torch.tensor([self.player_le.transform([p1_id])[0]], dtype=torch.long)  # We use [0] because transform() returns a list/array
-        p2_idx = torch.tensor([self.player_le.transform([p2_id])[0]], dtype=torch.long) # These must be tensors to later pass into the label encoders
         surf_idx = torch.tensor([self.surface_le.transform([match.surface])[0]], dtype=torch.long)
+
+        p1_emb = match.l_embedding if flip else match.w_embedding
+        p2_emb = match.w_embedding if flip else match.l_embedding
 
 
         # Mapping the continuous features, allowing for flipping if needed
@@ -76,19 +75,32 @@ class FeatureAssembler:
             "p2_fatigue": match.w_tournament_fatigue if flip else match.l_tournament_fatigue,
         }
 
-        # Create DataFrame and Scale
-        stats_df = pd.DataFrame([data])[EXPECTED_FEATURES].fillna(0) # Expected features forces the column order
-        scaled_stats = self.scaler.transform(stats_df)
+        # We split these for loops to ensure features are in the correct order
+        for i in range(1, 17):
+            data[f"p1_vec_{i}"] = p1_emb[i-1]
 
-      
-        with torch.no_grad(): # No grad turns off all tracking, allows simple evaluation
-            p1_emb = self.encoder.player_embed(p1_idx).numpy()
-            p2_emb = self.encoder.player_embed(p2_idx).numpy()
-            surf_emb= self.encoder.surface_embed(surf_idx)
+        for i in range(1, 17):
+            data[f"p2_vec_{i}"] = p2_emb[i-1]
 
-        final_vector = np.hstack([scaled_stats, p1_emb, p2_emb, surf_emb]) # hstack = horizontal stack
+                # 🎯 Pre-calculate the Surface DNA once
+        with torch.no_grad():
+            weights = self.encoder.surface_embed.weight.numpy()
+            # Create a map: {'Hard': [0.1, -0.2, ...], 'Clay': [...]}
+            self.surface_emb_map = {
+                label: weights[i] 
+                for i, label in enumerate(self.surface_le.classes_)
+            }
+
+        surf_vec = self.surface_emb_map.get(match.surface, [0.0] * 4)
+
+        for i in range(1, 5):
+            data[f"surf_vec_{i}"] = surf_vec[i-1]
+
+        df = pd.DataFrame([data])
+
+        df[EXPECTED_FEATURES] = self.scaler.transform(df[EXPECTED_FEATURES])
         
-        return final_vector
+        return df
 
     def assemble_manual(self, p1_id, p2_id, surface, stats_dict, flip=False):
 

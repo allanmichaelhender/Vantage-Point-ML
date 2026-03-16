@@ -27,10 +27,9 @@ export default function LabPage() {
       <StatCards summary={data.summary} />
 
       <div className="grid grid-cols-1 gap-6">
-        <EquityChart data={data.equity_curve} />
-        <MonthlyBreakdown data={data.monthly_breakdown} />
         <CalibrationChart data={data.calibration_data} />
         <EdgeChart data={data.edge_analysis} />
+        <EquityChart data={data.equity_curve} />
       </div>
     </div>
   );

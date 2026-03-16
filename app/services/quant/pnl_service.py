@@ -9,12 +9,18 @@ from datetime import date
 
 
 class PNLService:
-    def __init__(self, initial_bankroll=1000.0, kelly_fraction=0.05):
+    def __init__(
+        self,
+        initial_bankroll=1000.0,
+        kelly_fraction=0.05,
+        model=joblib.load("app/ml/models/XGBoost&NN.pkl"),
+        model_name="XGBoost&NN",
+    ):
         self.bankroll = initial_bankroll
         self.fraction = kelly_fraction
         self.max_bet_pct = 0.02
-
-        self.xgb = joblib.load("app/ml/models/final_xgboost_model.pkl")
+        self.model = model
+        self.model_name = model_name
         self.assembler = FeatureAssembler()
 
     def get_bet_size(self, model_prob, odds):
@@ -24,6 +30,28 @@ class PNLService:
         kelly = (b * p - q) / b
         suggested_pct = max(0, kelly * self.fraction)
         return min(suggested_pct, self.max_bet_pct)
+
+    # Method to convert bookie odds to fair odds
+    def calculate_fair_odds(self, p1_odds, p2_odds):
+        if not p1_odds or not p2_odds:
+            return None, None
+
+        # 1. Get Implied Probabilities
+        implied_p1 = 1 / p1_odds
+        implied_p2 = 1 / p2_odds
+
+        # 2. Calculate Total Market Juice (The Overround)
+        total_implied = implied_p1 + implied_p2
+
+        # 3. Calculate Fair Probabilities (Normalized to 100%)
+        fair_prob_p1 = implied_p1 / total_implied
+        fair_prob_p2 = implied_p2 / total_implied
+
+        # 4. Convert back to Fair Decimal Odds
+        fair_p1_odds = 1 / fair_prob_p1
+        fair_p2_odds = 1 / fair_prob_p2
+
+        return fair_p1_odds, fair_p2_odds
 
     async def run_backtest(self):
         cutoff_date = date(2025, 1, 1)
@@ -38,7 +66,7 @@ class PNLService:
                     Match.w_elo_before.isnot(None),
                     Match.tourney_date >= cutoff_date,
                     Match.w_matches_played >= 10,
-                    Match.l_matches_played >= 10
+                    Match.l_matches_played >= 10,
                 )
                 .order_by(Match.tourney_date, Match.match_num)
             )
@@ -57,9 +85,45 @@ class PNLService:
                 if x_norm is None or x_flip is None:
                     continue
 
-                # Probability P1 wins from both perspectives
-                p1_v1 = self.xgb.predict_proba(x_norm)[0][1]
-                p1_v2 = 1.0 - self.xgb.predict_proba(x_flip)[0][1]
+                if self.model_name == "XGBoost&NN":
+                    # Probability P1 wins from both perspectives
+                    p1_v1 = self.model.predict_proba(x_norm)[0][1]
+                    p1_v2 = 1.0 - self.model.predict_proba(x_flip)[0][1]
+
+                elif self.model_name == "XGBoost":
+                    features = [
+                        "p1_elo",
+                        "p2_elo",
+                        "p1_surf_elo",
+                        "p2_surf_elo",
+                        "p1_days_off",
+                        "p2_days_off",
+                        "p1_surf_days_off",
+                        "p2_surf_days_off",
+                        "p1_m_win",
+                        "p2_m_win",
+                        "p1_g_win",
+                        "p2_g_win",
+                        "p1_sv_won",
+                        "p1_ace_pg",
+                        "p1_df_pp",
+                        "p1_bp_s",
+                        "p1_ret_won",
+                        "p1_fatigue",
+                        "p2_sv_won",
+                        "p2_ace_pg",
+                        "p2_df_pp",
+                        "p2_bp_s",
+                        "p2_ret_won",
+                        "p2_fatigue",
+                    ]
+                    x_norm = self.assembler.assemble_match(m, flip=False)
+                    x_norm = x_norm[features]
+                    x_flip = self.assembler.assemble_match(m, flip=True)
+                    x_flip = x_flip[features]
+
+                    p1_v1 = self.model.predict_proba(x_norm)[0][1]
+                    p1_v2 = 1.0 - self.model.predict_proba(x_flip)[0][1]
 
                 p1_prob = (p1_v1 + p1_v2) / 2
                 p2_prob = 1.0 - p1_prob
@@ -68,6 +132,8 @@ class PNLService:
                 p1_odds = m.ps_w if m.ps_w else m.b365_w
                 p2_odds = m.ps_l if m.ps_l else m.b365_l
 
+                p1_market, p2_market = self.calculate_fair_odds(p1_odds, p2_odds)
+
                 # Betting logic
                 bet_placed = False
                 is_win = False
@@ -75,14 +141,18 @@ class PNLService:
                 bet_on = "None"
                 bet_amount = 0
 
-                if p1_prob > (1 / p1_odds): # + 0.05:
-                    bet_amount = current_balance * self.get_bet_size(p1_prob, p1_odds)
-                    pnl = (p1_odds - 1) * bet_amount
+                if p1_prob > (1 / p1_market):
+                    bet_amount = (
+                        10  # current_balance * self.get_bet_size(p1_prob, p1_market)
+                    )
+                    pnl = (p1_market - 1) * bet_amount
                     is_win = True
                     bet_on = "P1"
                     bet_placed = True
-                elif p2_prob > (1 / p2_odds): # + 0.05:
-                    bet_amount = current_balance * self.get_bet_size(p2_prob, p2_odds)
+                elif p2_prob > (1 / p2_market):
+                    bet_amount = (
+                        10  # current_balance * self.get_bet_size(p2_prob, p2_market)
+                    )
                     pnl = -bet_amount
                     is_win = False
                     bet_on = "P2"
@@ -93,29 +163,33 @@ class PNLService:
                     current_balance += pnl
 
                 # We record every game regarless of whether we bet or not
-                history.append({
-                    "date": m.tourney_date,
-                    "match_id": m.id,
-                    "p1_name": m.winner_name, 
-                    "p2_name": m.loser_name, 
-                    "bet_on": bet_on,        # Will be "None", "P1", or "P2"
-                    "bet_amount": bet_amount, # Will be 0 if no bet
-                    "is_win": is_win,         # Only meaningful if bet_placed
-                    "actual_winner": "P1",    # In the DB, P1 is always the winner
-                    "p1_prob": p1_prob,       
-                    "p2_prob": p2_prob,
-                    "p1_odds": p1_odds,
-                    "p2_odds": p2_odds,
-                    "pnl": pnl,
-                    "balance": current_balance,
-                    "surface": m.surface
-                })
-         
+                history.append(
+                    {
+                        "date": m.tourney_date,
+                        "match_id": m.id,
+                        "p1_name": m.winner_name,
+                        "p2_name": m.loser_name,
+                        "bet_on": bet_on,  # Will be "None", "P1", or "P2"
+                        "bet_amount": bet_amount,  # Will be 0 if no bet
+                        "is_win": is_win,  # Only meaningful if bet_placed
+                        "actual_winner": "P1",  # In the DB, P1 is always the winner
+                        "p1_prob": p1_prob,
+                        "p2_prob": p2_prob,
+                        "p1_market": p1_market,
+                        "p2_market": p2_market,
+                        "pnl": pnl,
+                        "balance": current_balance,
+                        "surface": m.surface,
+                    }
+                )
+
             # Results
             results_df = pd.DataFrame(history)
-            results_df.to_csv("app/ml/data/betting_results.csv", index=False)
+            results_df.to_csv(
+                f"app/ml/data/betting_results_{self.model_name}.csv", index=False
+            )
 
-            print("🏁 Backtest Finished.")
+            print(f"🏁 Backtest Finished. for {self.model_name}")
             print(f"📈 Final Bankroll: £{current_balance:.2f}")
 
             total_wagered = sum(h["bet_amount"] for h in history)
@@ -131,6 +205,26 @@ class PNLService:
             print(f"🚀 Model Yield (ROI): {yield_pct:.2%}")
 
 
+service1 = PNLService()
+service2 = PNLService(
+        model=joblib.load("app/ml/models/XGBoost.pkl"),
+        model_name="XGBoost",
+    )
+
+
+async def main():
+    # 🎯 1. Run the Hybrid Model
+    XGBoost_NN_service = PNLService() # Defaults to XGBoost&NN
+    await XGBoost_NN_service.run_backtest()
+
+    # 🎯 2. Run the Baseline Model
+    # Re-init inside the same async context
+    XGBoost_service = PNLService(
+        model=joblib.load("app/ml/models/XGBoost.pkl"),
+        model_name="XGBoost",
+    )
+    await XGBoost_service.run_backtest()
+
+
 if __name__ == "__main__":
-    service = PNLService()
-    asyncio.run(service.run_backtest())
+    asyncio.run(main())
