@@ -84,8 +84,8 @@ def train_encoder():
         print(f"Epoch {epoch+1}/10 | Loss: {total_loss/len(train_loader):.4f} | Val Acc: {accuracy:.2%}") # Thats loss per bastch size here
 
     # Saving the encoder
-    torch.save(model.state_dict(), 'app/ml/models/tennis_encoder.pt')
-    print("Encoder trained and saved to app/ml/models/tennis_encoder.pt")
+    torch.save(model.state_dict(), 'app/ml/models/tennis_encoder_initial.pt')
+    print("Encoder trained and saved to app/ml/models/tennis_encoder_initial.pt")
 
 if __name__ == "__main__":
     train_encoder()

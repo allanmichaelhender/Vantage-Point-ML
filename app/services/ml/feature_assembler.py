@@ -29,7 +29,7 @@ class FeatureAssembler:
         )
 
         # Filling out the skeleton with weights
-        self.encoder.load_state_dict(torch.load('app/ml/models/tennis_encoder.pt'))
+        self.encoder.load_state_dict(torch.load('app/ml/models/tennis_encoder_initial.pt'))
         self.encoder.eval()
 
     def assemble_match(self, match, flip=False):

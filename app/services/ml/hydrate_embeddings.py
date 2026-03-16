@@ -1,11 +1,11 @@
 import pandas as pd
 from datetime import datetime
-from app.services.ml.embedding_processor import TennisDataProcessor
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from app.ml.tennis_encoder import TennisEncoder
+from app.ml.processor import TennisDataProcessor
 from sqlalchemy import create_engine, text
 import os
 import json
@@ -13,7 +13,7 @@ import joblib
 
 
 
-def nudge_encoder_in_memory(model, df, epochs=1, lr=0.00001):
+def nudge_encoder_in_memory(model, df, epochs=3, lr=0.0001):
     # 1. Prep Tensors (Same as before)
     p1_idx = torch.tensor(df["p1_id_idx"].values, dtype=torch.long)
     p2_idx = torch.tensor(df["p2_id_idx"].values, dtype=torch.long)
@@ -28,29 +28,25 @@ def nudge_encoder_in_memory(model, df, epochs=1, lr=0.00001):
     dataset = TensorDataset(p1_idx, p2_idx, surf_idx, stats, target)
     loader = DataLoader(dataset, batch_size=256, shuffle=True)
 
-    # Freezing all the params minus player embed
-    for param in model.parameters():
-        param.requires_grad = False
 
-    for param in model.player_embed.parameters():
-        param.requires_grad = True
-
-    # 🎯 3. Use the EXISTING model and a tiny Learning Rate
-    # This prevents the "Brain" from forgetting 2010-2014
     optimizer = optim.Adam(model.parameters(), lr=lr)
     criterion = nn.BCELoss()
 
     # 🎯 4. The Nudge (1-2 Epochs)
-    model.train()
+    model.eval()
     for epoch in range(epochs):
+        epoch_loss = 0
         for b_p1, b_p2, b_surf, b_stats, b_y in loader:
             optimizer.zero_grad()
             outputs = model(b_p1, b_p2, b_surf, b_stats)
             loss = criterion(outputs, b_y)
             loss.backward()
             optimizer.step()
+            epoch_loss += loss.item()
+        
+        avg_loss = epoch_loss / len(loader)
+        print(f"   📉 Epoch {epoch+1}/{epochs} | Avg Loss: {avg_loss:.4f}")
     
-    # 🏁 Return the SAME object, now slightly updated
     return model
 
 
@@ -97,6 +93,7 @@ def main():
     processor = TennisDataProcessor()
     processor.player_encoder = joblib.load('app/ml/models/player_encoder.pkl')
     processor.surface_encoder = joblib.load('app/ml/models/surface_encoder.pkl')
+    processor.scaler = joblib.load('app/ml/models/scaler.pkl')
     num_players = len(processor.player_encoder.classes_)
     num_surfaces = len(processor.surface_encoder.classes_)
 
@@ -106,13 +103,13 @@ def main():
         input_dim=24
     )
 
-    model.load_state_dict(torch.load('app/ml/models/tennis_encoder.pt', weights_only=True))
+    model.load_state_dict(torch.load('app/ml/models/tennis_encoder_initial.pt', weights_only=True))
 
     while current_date < END_DATE:
         training_start = current_date - pd.DateOffset(years=LOOKBACK_YEARS)
 
         raw_train = processor.fetch_raw_data(training_start, current_date)
-        processed_train = processor.process_and_balance(raw_train)
+        processed_train = processor.process_and_balance(df=raw_train, frozen=True)
 
         model = nudge_encoder_in_memory(model, processed_train)
 
@@ -139,6 +136,8 @@ def main():
         )
         # Move to the next 2-month block
         current_date = stamp_end
+
+    torch.save(model.state_dict(), 'app/ml/models/tennis_encoder_final.pt')
 
 
 if __name__ == "__main__":

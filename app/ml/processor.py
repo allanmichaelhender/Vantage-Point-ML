@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 import joblib
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from app.database.session import engine # We can use the sync engine for a one-time pull
 import os
 from sqlalchemy import create_engine
+from datetime import datetime
 
 class TennisDataProcessor:
     def __init__(self):
@@ -16,17 +16,33 @@ class TennisDataProcessor:
 
         # Our scalar
         self.scaler = StandardScaler()
-        
-    # Fetching data from db function
-    def fetch_raw_data(self):
+
+        # Fit all the scalars now, we have to do this because of the retraining sets and keeping these constant
         db_url = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2") # We swap to psycopg2 because we are using syncronous
-        
-        # Creating a syncronous engine
         sync_engine = create_engine(db_url)
+
+        all_possible_players = pd.read_sql("SELECT winner_id, loser_id FROM matches", sync_engine)
+        all_ids = pd.unique(all_possible_players[['winner_id', 'loser_id']].values.ravel()) # Ravel unravels the 2d array into a single list
+
+        self.player_encoder.fit(all_ids)
+
+        all_surfaces = pd.read_sql("SELECT DISTINCT surface FROM matches", sync_engine)
+        self.surface_encoder.fit(all_surfaces['surface'].dropna().unique())
+
+    # Fetching data from db function
+    def fetch_raw_data(self, start_date: str = "2010-01-01", end_date: str = None):
         
-        # We select every game where both players have 10 recorded games (helps elo calculations and rolling stats) and remove retirments
+        if end_date is None:
+            end_date = datetime.now().strftime("%Y-%m-%d")
+
+        db_url = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2")
+        sync_engine = create_engine(db_url)
+
+        
+        # 🎯 Added 'id' to the query so we can map embeddings back to the DB
         query = """
             SELECT 
+                id,
                 tourney_date,
                 surface, winner_id, loser_id,
                 w_elo_before, l_elo_before,
@@ -45,13 +61,19 @@ class TennisDataProcessor:
             WHERE is_retirement = FALSE
             AND w_matches_played >= 10
             AND l_matches_played >= 10
+            AND tourney_date >= %(start)s
+            AND tourney_date < %(end)s
+            ORDER BY tourney_date ASC, id ASC
         """
         
-        return pd.read_sql(query, sync_engine)
+        # 🎯 Using params= to safely pass the window dates
+        return pd.read_sql(
+            query, 
+            sync_engine, 
+            params={"start": start_date, "end": end_date}
+        )
 
-    def process_and_balance(self, df):
-        print(f"📊 Original matches: {len(df)}")
-        
+    def process_and_balance(self, df, frozen=True):        
         # Converting to python datetime
         df['tourney_date'] = pd.to_datetime(df['tourney_date'])
 
@@ -103,25 +125,23 @@ class TennisDataProcessor:
         combined_df = pd.concat([df_1, df_0], axis=0).reset_index(drop=True)
         combined_df = combined_df.fillna(0)
 
-        db_url = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2") # We swap to psycopg2 because we are using syncronous
-        
-        # Creating a syncronous engine
-        sync_engine = create_engine(db_url)
-
-        all_possible_players = pd.read_sql("SELECT winner_id, loser_id FROM matches", sync_engine)
-        all_ids = pd.unique(all_possible_players[['winner_id', 'loser_id']].values.ravel()) # Ravel unravels the 2d array into a single list
-
         # Label Encoding Categorical features
         # all_ids = pd.concat([df['winner_id'], df['loser_id']]).unique()
-        self.player_encoder.fit(all_ids)
+        
         
         combined_df['p1_id_idx'] = self.player_encoder.transform(combined_df['p1_id'])
         combined_df['p2_id_idx'] = self.player_encoder.transform(combined_df['p2_id'])
-        combined_df['surface_idx'] = self.surface_encoder.fit_transform(combined_df['surface'])
+        combined_df['surface_idx'] = self.surface_encoder.transform(combined_df['surface'])
         
         # Scaling Continuous Features
         cont_cols = [c for c in combined_df.columns if c.startswith(('p1_', 'p2_')) and not c.endswith('_id') and not c.endswith('_idx')]
-        combined_df[cont_cols] = self.scaler.fit_transform(combined_df[cont_cols])
+
+        if frozen:
+            combined_df[cont_cols] = self.scaler.transform(combined_df[cont_cols])
+        
+        else:
+            combined_df[cont_cols] = self.scaler.fit_transform(combined_df[cont_cols])
+
 
         # Remember, our data is p1 wins first half, p2 wins second half, this line randomises the order to remove ordering bias
         combined_df = combined_df.sample(frac=1).reset_index(drop=True)
@@ -137,7 +157,7 @@ class TennisDataProcessor:
 if __name__ == "__main__":
     proc = TennisDataProcessor()
     raw = proc.fetch_raw_data()
-    final = proc.process_and_balance(raw)
+    final = proc.process_and_balance(raw, frozen=False)
     
     # Save the processed data for PyTorch
     final.to_pickle('app/ml/data/processed_training_data.pkl')
