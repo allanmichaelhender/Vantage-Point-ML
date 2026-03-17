@@ -26,10 +26,10 @@ async def get_lab_stats():
 
 
 # Returns bucketed edge analysis on our model 
-@router.get("/edge-analysis", response_model=List[EdgeBucketResponse])
+@router.get("/edge-analysis", response_model=EdgeBucketResponse)
 async def get_edge_analysis():
-    xgboost_nn_performance = xgboost_nn_lab_service.get_model_performance()
-    xgboost_performance = xgboost_lab_service.get_model_performance()
+    xgboost_nn_performance = xgboost_nn_lab_service.get_edge_analysis()
+    xgboost_performance = xgboost_lab_service.get_edge_analysis()
 
     result_xgboost_nn, result_xbgoost = await asyncio.gather(xgboost_nn_performance, xgboost_performance)
 
@@ -37,7 +37,7 @@ async def get_edge_analysis():
 
 
 # Returns calibration data for plotting in the frontend
-@router.get("/calibration", response_model=List[CalibrationPointResponse])
+@router.get("/calibration", response_model=CalibrationPointResponse)
 async def get_calibration_stats():
     xgboost_nn_performance = xgboost_nn_lab_service.get_calibration()
     xgboost_performance = xgboost_lab_service.get_calibration()

@@ -143,7 +143,7 @@ class PNLService:
 
                 if p1_prob > (1 / p1_market):
                     bet_amount = (
-                        10  # current_balance * self.get_bet_size(p1_prob, p1_market)
+                        current_balance * self.get_bet_size(p1_prob, p1_market)
                     )
                     pnl = (p1_market - 1) * bet_amount
                     is_win = True
@@ -151,7 +151,7 @@ class PNLService:
                     bet_placed = True
                 elif p2_prob > (1 / p2_market):
                     bet_amount = (
-                        10  # current_balance * self.get_bet_size(p2_prob, p2_market)
+                        current_balance * self.get_bet_size(p2_prob, p2_market)
                     )
                     pnl = -bet_amount
                     is_win = False

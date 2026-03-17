@@ -118,21 +118,25 @@ class LabService:
     async def get_calibration(self):
         df = pd.read_csv(self.file_path)
 
-        # Find the probability of the favourite
+        #Identity the favourite
         df["fav_prob"] = np.where(df["p1_prob"] >= 0.5, df["p1_prob"], df["p2_prob"])
+        df["fav_won"] = np.where(df["p1_prob"] >= 0.5, 1.0, 0.0)
 
-        # Remember p1 is always the winner, so we just need to check if p1 was our favourite
-        df["fav_won"] = np.where(df["p1_prob"] >= 0.5, 1.0, 0.0) # 1 if p1 was favoured, 0 if p2 was favoured
 
-        # Creating bins
-        bins = np.arange(0.5, 1.05, 0.05)
-        labels = [f"{int(i * 100)}-{int((i + 0.05) * 100)}%" for i in bins[:-1]]
+    
+        bins = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 1.0]
+        
+        
+        labels = [
+            "50-55%", "55-60%", "60-65%", "65-70%", 
+            "70-75%", "75-80%", "80-85%", "85-90%", "90-100%"
+        ]
 
         df["prob_bucket"] = pd.cut(
             df["fav_prob"], bins=bins, labels=labels, include_lowest=True
-        ) # Include lowest ensures an exact 0.5 odds is included in first bucket
+        )
 
-        # Aggregates
+        # Aggregates 
         calibration = (
             df.groupby("prob_bucket", observed=True)
             .apply(
@@ -146,7 +150,6 @@ class LabService:
             )
             .reset_index()
         )
-
 
         return calibration.to_dict(orient="records")
 
