@@ -45,10 +45,10 @@ function App() {
         </nav>
 
         <div className="mt-auto p-4 bg-slate-800/30 rounded-2xl border border-slate-700/30">
-          <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.2em]">Engine Status</p>
+          <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.2em]">Default Model</p>
           <div className="flex items-center gap-2 mt-2">
             <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-            <p className="text-xs font-mono text-slate-300">v1</p>
+            <p className="text-xs font-mono text-slate-300">v2 - XGBoost + NN</p>
           </div>
         </div>
       </aside>

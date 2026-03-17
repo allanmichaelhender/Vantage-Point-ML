@@ -22,11 +22,11 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
             Live Dashboard
             <span className="text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full uppercase tracking-widest font-mono">
-              v1
+              v2
             </span>
           </h1>
           <p className="text-slate-400 text-sm mt-1">
-            Real-time XGBoost Probabilities
+            Real-time XGBoost + NN Probabilities
           </p>
         </div>
 

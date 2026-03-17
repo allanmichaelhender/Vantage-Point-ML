@@ -6,7 +6,8 @@ from app.ml.train_encoder import train_encoder
 from app.services.ml.hydrate_embeddings import main as hydrate_embeddings 
 from app.ml.train_xgboost_nn import train_xgboost as train_XGBoost_NN
 from app.ml.train_xgboost import train_xgboost as train_XGBoost
-from app.services.quant.pnl_service import service1, service2
+from app.ml.train_logistic import train_logistic as train_Logistic
+from app.services.quant.pnl_service import xgboost_nn_service, xg_boost_service, nn_service, logistic_service
 
 
 async def run_unified_pipeline():
@@ -50,12 +51,20 @@ async def run_unified_pipeline():
         print("\n🚀 STEP 5: Training  XGBoost Classifier...")
         train_XGBoost()
         print("✅ Step 5 Complete. XGBoost model ready.")
+        
+        # --- 5. TRAIN Logistic Regression ---
+        # Pulls the stitched DNA from the DB and trains the final classifier
+        print("\n🚀 STEP 5: Training Logistic Regression Classifier...")
+        train_Logistic()
+        print("✅ Step 5 Complete. Logistic Regression model ready.")
 
-        # --- 5. P&L ANALYSIS ---
+        # --- 6. P&L ANALYSIS ---
         # Backtests the 2025/2026 predictions against market odds
         print("\n💰 STEP 6: Calculating Historical P&L Performance...")
-        await service1.run_backtest()
-        await service2.run_backtest()
+        await xgboost_nn_service.run_backtest()
+        await xg_boost_service.run_backtest()
+        await nn_service.run_backtest()
+        await logistic_service.run_backtest()
         print("✅ Step 6 Complete. Performance metrics generated.")
 
     except Exception as e:

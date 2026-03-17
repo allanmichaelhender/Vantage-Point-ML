@@ -9,10 +9,12 @@ import type { LabData } from "../types/lab";
 
 export function usePerformance() {
   const [data, setData] = useState<LabData | null>(null);
-  // 🎯 Add a state to toggle between the two brains
-  const [activeModel, setActiveModel] = useState<"xgboost_nn" | "xgboost">(
-    "xgboost_nn",
-  );
+
+  // 🎯 1. Add "logistic" to the allowed active models
+  const [activeModel, setActiveModel] = useState<
+    "xgboost_nn" | "xgboost" | "nn" | "logistic"
+  >("xgboost_nn");
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,7 +28,7 @@ export function usePerformance() {
         api.get("/lab/edge-analysis"),
       ]);
 
-      // 🧩 We "stitch" the calibration and edge data into the specific model profiles
+      // 🎯 2. Map all 4 models from the API response
       setData({
         xgboost_nn: {
           ...perfRes.data.xgboost_nn,
@@ -37,6 +39,16 @@ export function usePerformance() {
           ...perfRes.data.xgboost,
           calibration_data: calRes.data.xgboost,
           edge_analysis: edgeRes.data.xgboost,
+        },
+        nn: {
+          ...perfRes.data.nn,
+          calibration_data: calRes.data.nn,
+          edge_analysis: edgeRes.data.nn,
+        },
+        logistic: {
+          ...perfRes.data.logistic, // 👈 New Legacy model
+          calibration_data: calRes.data.logistic,
+          edge_analysis: edgeRes.data.logistic,
         },
       });
 

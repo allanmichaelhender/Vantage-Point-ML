@@ -38,7 +38,7 @@ class PlayerHistory:
         surf_days_off = (
             (current_date - self.last_surface_date.get(surface)).days
             if self.last_surface_date.get(surface)
-            else None
+            else 730
         )
 
         def safe_division(n, d, default=0.0):

@@ -14,14 +14,14 @@ export interface WeeklyPoint {
 }
 
 export interface CalibrationPoint {
-  prob_bucket: string;   // 🎯 Match your FastAPI 'prob_bucket'
-  avg_predicted: number; 
+  prob_bucket: string; // 🎯 Match your FastAPI 'prob_bucket'
+  avg_predicted: number;
   actual_win_rate: number;
   match_count: number;
 }
 
 export interface EdgeBucket {
-  bucket: string;        // 🎯 Match your FastAPI 'bucket'
+  bucket: string; // 🎯 Match your FastAPI 'bucket'
   roi: number;
   match_count: number;
 }
@@ -35,10 +35,11 @@ export interface ModelProfile {
   edge_analysis: EdgeBucket[];
 }
 
-export type ModelType = 'xgboost_nn' | 'xgboost';
+export type ModelType = "xgboost_nn" | "xgboost" | "nn" | "logistic";
 
 export interface LabData {
   xgboost_nn: ModelProfile;
   xgboost: ModelProfile;
+  nn: ModelProfile;
+  logistic: ModelProfile;
 }
-

@@ -62,9 +62,9 @@ export function MatchCard({ match, isManual = false }: { match: any; isManual?: 
         {bookieProb ? (
           <span>Bookie Implied: {(bookieProb * 100).toFixed(0)}%</span>
         ) : (
-          <span className="text-blue-500/50">XGBOOST ENGINE</span>
+          <span className="text-blue-500/50">XGBOOST + NN ENGINE</span>
         )}
-        <span className="text-slate-400 italic">XGBOOST V1</span>
+        <span className="text-slate-400 italic">v2</span>
       </div>
     </div>
   );

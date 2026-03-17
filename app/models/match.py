@@ -108,5 +108,7 @@ class Match(Base):
     ps_w: Mapped[float | None] = mapped_column(Float)
     ps_l: Mapped[float | None] = mapped_column(Float)
 
+    # NN embedding and prediciton fields
     w_embedding: Mapped[list[float] | None] = mapped_column(JSONB)
     l_embedding: Mapped[list[float] | None] = mapped_column(JSONB)
+    nn_p1_prob: Mapped[float | None] = mapped_column(Float)

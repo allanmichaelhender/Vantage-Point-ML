@@ -25,6 +25,8 @@ class ModelProfile(BaseModel):
 class ModelPerformanceResponse(BaseModel):
     xgboost_nn: ModelProfile  
     xgboost: ModelProfile 
+    nn: ModelProfile
+    logistic: ModelProfile
 
 class EdgeBucket(BaseModel):
     bucket: str
@@ -34,6 +36,8 @@ class EdgeBucket(BaseModel):
 class EdgeBucketResponse(BaseModel):
     xgboost_nn: List[EdgeBucket]
     xgboost: List[EdgeBucket]
+    nn: List[EdgeBucket]
+    logistic: List[EdgeBucket]
 
 class CalibrationPoint(BaseModel):
     prob_bucket: str
@@ -44,5 +48,7 @@ class CalibrationPoint(BaseModel):
 class CalibrationPointResponse(BaseModel):
     xgboost_nn: List[CalibrationPoint]
     xgboost: List[CalibrationPoint]
+    nn: List[CalibrationPoint]
+    logistic: List[CalibrationPoint]
 
 

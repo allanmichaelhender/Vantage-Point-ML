@@ -67,6 +67,7 @@ class PNLService:
                     Match.tourney_date >= cutoff_date,
                     Match.w_matches_played >= 10,
                     Match.l_matches_played >= 10,
+                    Match.is_retirement == False
                 )
                 .order_by(Match.tourney_date, Match.match_num)
             )
@@ -90,7 +91,7 @@ class PNLService:
                     p1_v1 = self.model.predict_proba(x_norm)[0][1]
                     p1_v2 = 1.0 - self.model.predict_proba(x_flip)[0][1]
 
-                elif self.model_name == "XGBoost":
+                elif self.model_name in ["XGBoost", "Logistic"]:
                     features = [
                         "p1_elo",
                         "p2_elo",
@@ -122,8 +123,23 @@ class PNLService:
                     x_flip = self.assembler.assemble_match(m, flip=True)
                     x_flip = x_flip[features]
 
+                    if x_norm[features].isnull().values.any():
+                        # Find the specific column names that contain the NaNs
+                        nan_columns = x_norm.columns[x_norm.isna().any()].tolist()
+                        
+                        print(f"\n❌ NaN detected in Match ID: {m.id} ({m.winner_name} vs {m.loser_name})")
+                        print(f"Affected Features: {nan_columns}")
+                        
+                        # 🎯 2. Print the actual values for those columns to see what's happening
+                        # Using .to_dict() often makes it easier to read in the terminal
+                        print("Row Data:", x_norm[nan_columns].to_dict(orient='records'))
+
                     p1_v1 = self.model.predict_proba(x_norm)[0][1]
                     p1_v2 = 1.0 - self.model.predict_proba(x_flip)[0][1]
+
+                elif self.model_name == "NN":
+                    p1_v1 = m.nn_p1_prob # NN is already symmetric
+                    p1_v2 = m.nn_p1_prob
 
                 p1_prob = (p1_v1 + p1_v2) / 2
                 p2_prob = 1.0 - p1_prob
@@ -205,25 +221,40 @@ class PNLService:
             print(f"🚀 Model Yield (ROI): {yield_pct:.2%}")
 
 
-service1 = PNLService()
-service2 = PNLService(
+xgboost_nn_service = PNLService()
+xg_boost_service = PNLService(
         model=joblib.load("app/ml/models/XGBoost.pkl"),
         model_name="XGBoost",
+    )
+nn_service = PNLService(model_name="NN")
+logistic_service = PNLService(
+        model=joblib.load("app/ml/models/LogisticRegression.pkl"),
+        model_name="Logistic",
     )
 
 
 async def main():
     # 🎯 1. Run the Hybrid Model
-    XGBoost_NN_service = PNLService() # Defaults to XGBoost&NN
-    await XGBoost_NN_service.run_backtest()
+    # XGBoost_NN_service = PNLService() # Defaults to XGBoost&NN
+    # await XGBoost_NN_service.run_backtest()
 
-    # 🎯 2. Run the Baseline Model
-    # Re-init inside the same async context
-    XGBoost_service = PNLService(
-        model=joblib.load("app/ml/models/XGBoost.pkl"),
-        model_name="XGBoost",
+    # # 🎯 2. Run the Baseline Model
+    # # Re-init inside the same async context
+    # XGBoost_service = PNLService(
+    #     model=joblib.load("app/ml/models/XGBoost.pkl"),
+    #     model_name="XGBoost",
+    # )
+    # await XGBoost_service.run_backtest()
+
+    # NN_service = PNLService(model_name="NN")
+    # await NN_service.run_backtest()
+
+    logistic_service = PNLService(
+        model=joblib.load("app/ml/models/LogisticRegression.pkl"),
+        model_name="Logistic",
     )
-    await XGBoost_service.run_backtest()
+    await logistic_service.run_backtest()
+
 
 
 if __name__ == "__main__":
