@@ -44,8 +44,6 @@ def nudge_encoder_in_memory(model, df, epochs=3, lr=0.0001):
             optimizer.step()
             epoch_loss += loss.item()
         
-        avg_loss = epoch_loss / len(loader)
-        print(f"   📉 Epoch {epoch+1}/{epochs} | Avg Loss: {avg_loss:.4f}")
     
     return model
 

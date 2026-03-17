@@ -31,9 +31,18 @@ class EdgeBucket(BaseModel):
     roi: float
     match_count: int
 
+class EdgeBucketResponse(BaseModel):
+    xgboost_nn: List[EdgeBucket]
+    xgboost: List[EdgeBucket]
+
 class CalibrationPoint(BaseModel):
     prob_bucket: str
     avg_predicted: float
     actual_win_rate: float
     match_count: int
+
+class CalibrationPointResponse(BaseModel):
+    xgboost_nn: List[CalibrationPoint]
+    xgboost: List[CalibrationPoint]
+
 

@@ -1,94 +1,99 @@
+import { useState, useEffect } from 'react';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-  ReferenceLine,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Cell, ReferenceLine
 } from "recharts";
-import type { EdgeBucket } from "../../types/lab";
+import type { LabData, ModelType } from '../../types/lab';
 
-export function EdgeChart({ data }: { data: EdgeBucket[] }) {
-  // 🎯 Guard Clause: Prevent crash if data is loading or empty
-  if (!data || data.length === 0) {
-    return (
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl h-[400px] flex items-center justify-center">
-        <p className="text-slate-500 animate-pulse text-xs uppercase tracking-widest font-bold">
-          Analyzing Edge Data...
-        </p>
-      </div>
-    );
-  }
+interface Props {
+  data: LabData;
+  globalModel: ModelType;
+}
+
+// 🎯 Helper to merge edge buckets by name
+const mergeEdgeData = (nn: any[], base: any[]) => {
+  return nn.map((item, i) => ({
+    bucket: item.bucket,
+    nn_roi: item.roi,
+    nn_matches: item.match_count,
+    base_roi: base[i]?.roi ?? 0,
+    base_matches: base[i]?.match_count ?? 0,
+  }));
+};
+
+export function EdgeChart({ data, globalModel }: Props) {
+  const [viewMode, setViewMode] = useState<ModelType | 'both'>(globalModel);
+
+  useEffect(() => {
+    setViewMode(globalModel);
+  }, [globalModel]);
+
+  const chartData = viewMode === 'both' 
+    ? mergeEdgeData(data.xgboost_nn.edge_analysis, data.xgboost.edge_analysis)
+    : data[viewMode].edge_analysis;
 
   return (
-    <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl h-[400px]">
-      <h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-6">
-        ROI by Edge Size
-      </h3>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data}>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="#1e293b"
-            vertical={false}
-          />
+    <div className="group relative bg-slate-900 border border-slate-800 p-6 rounded-xl h-[450px] w-full">
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+            ROI by Edge Size
+          </h3>
+          <p className="text-slate-500 text-[10px] mt-1 italic">
+            Visualising profit yield across different "value" buckets
+          </p>
+        </div>
 
-          {/* 🎯 Use 'bucket' key for X-Axis labels */}
-          <XAxis
-            dataKey="bucket"
-            stroke="#475569"
-            fontSize={10}
-            interval={0}
-            tickFormatter={(value) => value.split(" ")[0]} // e.g., "15%+" instead of full text
-          />
+        {/* 🎯 Local Controls */}
+        <div className="flex bg-slate-950/50 p-1 rounded-lg border border-slate-800 opacity-0 group-hover:opacity-100 transition-opacity">
+          {['xgboost_nn', 'xgboost', 'both'].map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode as any)}
+              className={`px-3 py-1 rounded text-[10px] font-bold uppercase transition-colors ${
+                viewMode === mode ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              {mode === 'xgboost_nn' ? 'Neural' : mode === 'xgboost' ? 'Base' : 'Vs'}
+            </button>
+          ))}
+        </div>
+      </div>
 
-          {/* 🎯 Convert decimal ROI to % for Y-Axis */}
-          <YAxis
-            stroke="#475569"
-            fontSize={12}
-            tickFormatter={(val) => `${(val * 100).toFixed(0)}%`}
-          />
+      <ResponsiveContainer width="100%" height="85%">
+        <BarChart data={chartData} barGap={8}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+          <XAxis dataKey="bucket" stroke="#475569" fontSize={10} tickFormatter={(val) => val.split(" ")[0]} />
+          <YAxis stroke="#475569" fontSize={10} tickFormatter={(val) => `${(val * 100).toFixed(0)}%`} />
+          <ReferenceLine y={0} stroke="#475569" />
 
           <Tooltip
             cursor={{ fill: "#ffffff", opacity: 0.05 }}
             content={({ active, payload }) => {
               if (active && payload && payload.length) {
-                const barData = payload[0];
-                const roiValue = Number(barData.value);
-                const isPositive = roiValue >= 0;
-
-                // 🎯 Extract the extra fields from the raw data row
-                const { bucket, match_count } = barData.payload;
-
                 return (
                   <div className="bg-slate-950 border border-slate-800 p-3 rounded-lg shadow-2xl space-y-2">
                     <p className="text-[10px] text-slate-500 font-bold uppercase border-b border-slate-800 pb-1">
-                      {bucket} Edge
+                      {payload[0].payload.bucket} Edge
                     </p>
-
-                    <div className="flex justify-between items-center gap-4">
-                      <span className="text-[10px] text-slate-400 uppercase tracking-tight">
-                        ROI:
-                      </span>
-                      <span
-                        className="text-sm font-mono font-bold"
-                        style={{ color: isPositive ? "#22c55e" : "#ef4444" }}
-                      >
-                        {(roiValue * 100).toFixed(2)}%
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center gap-4">
-                      <span className="text-[10px] text-slate-400 uppercase tracking-tight">
-                        Volume:
-                      </span>
-                      <span className="text-xs text-slate-200 font-mono">
-                        {match_count} Matches
-                      </span>
-                    </div>
+                    {payload.map((entry: any) => {
+                      const isNN = entry.dataKey.includes('nn');
+                      const roi = Number(entry.value) * 100;
+                      const matches = isNN ? entry.payload.nn_matches : (entry.payload.base_matches || entry.payload.match_count);
+                      return (
+                        <div key={entry.dataKey} className="space-y-1">
+                          <p className="text-[10px] text-indigo-400 font-bold">
+                            {isNN ? 'Neural DNA' : 'Baseline'}
+                          </p>
+                          <div className="flex justify-between gap-4">
+                            <span className="text-xs font-bold" style={{ color: roi >= 0 ? "#22c55e" : "#ef4444" }}>
+                              {roi.toFixed(2)}% ROI
+                            </span>
+                            <span className="text-[10px] text-slate-500">{matches} Matches</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               }
@@ -96,17 +101,29 @@ export function EdgeChart({ data }: { data: EdgeBucket[] }) {
             }}
           />
 
-          <ReferenceLine y={0} stroke="#475569" />
+          {/* 🎯 Neural Bar */}
+          {(viewMode === 'xgboost_nn' || viewMode === 'both') && (
+            <Bar dataKey={viewMode === 'both' ? "nn_roi" : "roi"} name="Neural DNA">
+              {chartData.map((entry: any, index: number) => (
+                <Cell 
+                  key={`nn-${index}`} 
+                  fill={viewMode === 'both' ? "#6366f1" : (entry.roi >= 0 ? "#22c55e" : "#ef4444")} 
+                />
+              ))}
+            </Bar>
+          )}
 
-          <Bar dataKey="roi">
-            {data.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                // 🎯 Dynamic coloring: Green for profit, Red for loss
-                fill={entry.roi >= 0 ? "#22c55e" : "#ef4444"}
-              />
-            ))}
-          </Bar>
+          {/* 🎯 Baseline Bar */}
+          {(viewMode === 'xgboost' || viewMode === 'both') && (
+            <Bar dataKey={viewMode === 'both' ? "base_roi" : "roi"} name="Baseline">
+              {chartData.map((entry: any, index: number) => (
+                <Cell 
+                  key={`base-${index}`} 
+                  fill={viewMode === 'both' ? "#22c55e" : (entry.roi >= 0 ? "#22c55e" : "#ef4444")} 
+                />
+              ))}
+            </Bar>
+          )}
         </BarChart>
       </ResponsiveContainer>
     </div>

@@ -17,22 +17,6 @@ async def run_heavy_sync():
         # Get matches from Gemini + ODDS api service
         featured_matches = await llmservice.sync_upcoming_matches(session)
 
-        # seen_matchups = set()
-        # unique_matches = []
-
-        # for m in featured_matches:
-        #     # Create a sorted tuple of IDs so (A, B) and (B, A) look identical
-        #     matchup_key = tuple(sorted([str(m["p1_id"]), str(m["p2_id"])]))
-            
-        #     if matchup_key not in seen_matchups:
-        #         seen_matchups.add(matchup_key)
-        #         unique_matches.append(m)
-
-        # # 2. Map Players (The 'Big Pluck')
-        # unique_ids = {m["p1_id"] for m in unique_matches if m["p1_id"]} | \
-        #              {m["p2_id"] for m in unique_matches if m["p2_id"]}
-
-        # Creating a set of ids, uniqueness is implied being set
         unique_ids = {m["p1_id"] for m in featured_matches if m["p1_id"]} | \
                      {m["p2_id"] for m in featured_matches if m["p2_id"]}
         
@@ -106,7 +90,6 @@ async def get_live_dashboard(background_tasks: BackgroundTasks, session: AsyncSe
 
     # If stale or older than 12 hours since last sync, trigger the background task
     if needs_sync:
-        print("🕒 Cache stale/empty. Dispatching background sync...")
         background_tasks.add_task(run_heavy_sync)
 
     # we return the cached matches, status and last sync time, the frontend hits the endpoint every few seconds until it gets fresh as the status and the corresponding new set of games

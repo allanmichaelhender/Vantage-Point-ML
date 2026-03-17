@@ -147,7 +147,6 @@ class LabService:
             .reset_index()
         )
 
-        df.to_csv("app/ml/data/calibration_results.csv", index=False)
 
         return calibration.to_dict(orient="records")
 
