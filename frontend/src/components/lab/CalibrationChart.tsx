@@ -96,7 +96,7 @@ export function CalibrationChart({ data, globalModel }: Props) {
       </div>
       <ResponsiveContainer width="100%" height="85%">
         <AreaChart
-          data={chartData}
+          data={chartData as any[]}
           margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
         >
           <CartesianGrid

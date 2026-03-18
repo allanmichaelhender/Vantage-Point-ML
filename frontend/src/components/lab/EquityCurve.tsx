@@ -107,7 +107,7 @@ export function EquityCurve({ data, globalModel }: Props) {
 
       {/* --- 2. THE CHART (Direct child of the 450px container) --- */}
       <ResponsiveContainer width="100%" height="85%">
-        <AreaChart data={chartData}>
+        <AreaChart data={chartData as any[]}>
           <defs>
             <linearGradient id="colorNN" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
@@ -149,7 +149,7 @@ export function EquityCurve({ data, globalModel }: Props) {
               border: "1px solid #1e293b",
               borderRadius: "8px",
             }}
-            formatter={(value: any, name: string, props: any) => {
+            formatter={(value: any, name: any, props: any) => {
               const formattedValue = `£${Number(value).toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,

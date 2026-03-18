@@ -99,7 +99,7 @@ export function EdgeChart({ data, globalModel }: Props) {
       </div>
 
       <ResponsiveContainer width="100%" height="85%">
-        <BarChart data={chartData} barGap={8}>
+        <BarChart data={chartData as any[]} barGap={8}>
           <CartesianGrid
             strokeDasharray="3 3"
             stroke="#1e293b"
