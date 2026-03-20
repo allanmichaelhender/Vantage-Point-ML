@@ -232,13 +232,13 @@ def train_logistic():
     X_excluded, y_excluded = excluded_df[features], excluded_df["target"]
 
     # 1. Initialize Logistic Regression (Shorthand: LR)
-    lr_base = LogisticRegression(solver='liblinear', max_iter=1000, random_state=42)
+    lr_base = LogisticRegression(solver="liblinear", max_iter=1000, random_state=42)
 
     # 2. Define the "Grid" of parameters to test
     # C: Small = Strong Penalty (underfit), Large = Weak Penalty (overfit)
     param_grid = {
-        'C': [0.001, 0.01, 0.1, 1, 10, 100],
-        'penalty': ['l1', 'l2'] # L1 is Sparsity, L2 is Smoothing
+        "C": [0.001, 0.01, 0.1, 1, 10, 100],
+        "penalty": ["l1", "l2"],  # L1 is Sparsity, L2 is Smoothing
     }
 
     # 3. Setup the Search
@@ -246,9 +246,9 @@ def train_logistic():
     grid_search = GridSearchCV(
         estimator=lr_base,
         param_grid=param_grid,
-        cv=5, 
-        scoring='neg_log_loss', # Best for probabilities (Brier-adjacent)
-        n_jobs=1
+        cv=5,
+        scoring="neg_log_loss",  # Best for probabilities (Brier-adjacent)
+        n_jobs=1,
     )
 
     # 4. Fit the Search
@@ -260,8 +260,7 @@ def train_logistic():
     print(f"🎯 Best Parameters: {grid_search.best_params_}")
     print(f"📈 Best Log Loss: {-grid_search.best_score_:.4f}")
 
-
-        # 3. Evaluate on the Excluded Set
+    # 3. Evaluate on the Excluded Set
     predictions = lr_model.predict(X_excluded)
     accuracy = accuracy_score(y_excluded, predictions)
 
