@@ -1,6 +1,6 @@
 // 🎯 Add this import line
-import { useState, useEffect, useRef } from 'react'; 
-import api from '../services/api';
+import { useState, useEffect, useRef } from "react";
+import api from "../services/api";
 
 export interface LiveMatch {
   id: string;
@@ -11,10 +11,11 @@ export interface LiveMatch {
   commence_time: string;
 }
 
-
 export function useLiveMatches() {
   const [matches, setMatches] = useState<LiveMatch[]>([]);
-  const [status, setStatus] = useState<'fresh' | 'revalidating' | 'loading'>('loading');
+  const [status, setStatus] = useState<"fresh" | "revalidating" | "loading">(
+    "loading",
+  );
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +25,7 @@ export function useLiveMatches() {
 
   const fetchMatches = async () => {
     try {
-      const response = await api.get('/upcoming/sync');
+      const response = await api.get("/upcoming/sync");
       const fetchedMatches = response.data.matches || [];
       const newStatus = response.data.status;
 
@@ -33,9 +34,11 @@ export function useLiveMatches() {
       setError(null);
 
       // 🎯 Logic: If no matches and still revalidating, increment retry
-      if (newStatus === 'revalidating' && fetchedMatches.length === 0) {
+      if (newStatus === "revalidating" && fetchedMatches.length === 0) {
         retryCountRef.current += 1;
-        console.log(`Sync attempt ${retryCountRef.current}/${MAX_RETRIES} failed to find matches.`);
+        console.log(
+          `Sync attempt ${retryCountRef.current}/${MAX_RETRIES} failed to find matches.`,
+        );
       } else {
         retryCountRef.current = 0; // Reset if we found matches or it's finished
       }
@@ -43,13 +46,13 @@ export function useLiveMatches() {
       // 🎯 Kill-switch: Force status to 'fresh' if we hit the limit
       if (retryCountRef.current >= MAX_RETRIES) {
         console.log("🛑 Max retries reached. Stopping sync loop.");
-        setStatus('fresh');
+        setStatus("fresh");
       } else {
         setStatus(newStatus);
       }
     } catch (err: any) {
       setError("Failed to fetch live matches");
-      setStatus('fresh'); // Stop polling on error
+      setStatus("fresh"); // Stop polling on error
     }
   };
 
@@ -60,8 +63,8 @@ export function useLiveMatches() {
     let intervalId: any = null;
 
     // Only start the interval if we are in 'revalidating' state
-    if (status === 'revalidating') {
-      intervalId = setInterval(fetchMatches, 5000);
+    if (status === "revalidating") {
+      intervalId = setInterval(fetchMatches, 10000);
     }
 
     // 🎯 CLEANUP: This is critical to stop the loop
