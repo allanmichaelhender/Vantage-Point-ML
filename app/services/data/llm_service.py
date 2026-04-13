@@ -12,7 +12,7 @@ class LLMService:
         self.gemini_key = os.getenv("GEMINI_API_KEY")
         self.odds_key = os.getenv("THE_ODDS_API_KEY")
         genai.configure(api_key=self.gemini_key)
-        self.model = genai.GenerativeModel("gemini-3.1-flash-lite")
+        self.model = genai.GenerativeModel("gemini-2.5-flash-lite")
 
     # Class method to fetch top playesr
     async def get_elite_100(self, session: AsyncSession):
