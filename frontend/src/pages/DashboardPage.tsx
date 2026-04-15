@@ -1,18 +1,45 @@
 import { useState } from "react";
-import { Plus, Zap} from "lucide-react";
+import { Plus, Zap, RefreshCw } from "lucide-react";
 import { PredictModal } from "../components/dashboard/PredictModal";
 import { MatchCard } from "../components/dashboard/MatchCard";
 import { useLiveMatches } from "../hooks/useLiveMatches";
+import api from "../services/api";
 
 export default function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { matches, status, lastSync, error } = useLiveMatches();
+  const { matches, lastSync, error, refetch } = useLiveMatches();
   const [manualPredictions, setManualPredictions] = useState<any[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-
-
-  // Filter logic for "Edge" (Value Bets)
   const displayedMatches = matches;
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    try {
+      await api.post("/upcoming/sync/manual");
+      await refetch();
+    } catch (err) {
+      console.error("Manual sync failed:", err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const formatLastSync = (dateStr: string | null) => {
+    if (!dateStr) return "Never";
+    const date = new Date(dateStr);
+    const today = new Date();
+    const isToday = date.toDateString() === today.toDateString();
+
+    if (isToday) {
+      return `Today at ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    }
+    return date.toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -30,54 +57,19 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-900/40 active:scale-95 group"
-        >
-          <Plus
-            size={18}
-            className="group-hover:rotate-90 transition-transform"
-          />
-          <span>Predict Custom Match</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-900/40 active:scale-95 group"
+          >
+            <Plus
+              size={18}
+              className="group-hover:rotate-90 transition-transform"
+            />
+            <span>Predict Custom Match</span>
+          </button>
+        </div>
       </header>
-
-      {/* 📊 Summary Banner (Quick Context) */}
-      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-xl flex items-center gap-4">
-          <div className="p-2 bg-green-500/10 rounded-lg text-green-400">
-            <TrendingUp size={20} />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 font-bold uppercase">
-              Today's Avg Edge
-            </p>
-            <p className="text-lg font-mono text-white">+4.2%</p>
-          </div>
-        </div>
-        <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-xl flex items-center gap-4">
-          <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
-            <Zap size={20} />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 font-bold uppercase">
-              Active Models
-            </p>
-            <p className="text-lg font-mono text-white">XGB v4, CatBoost v1</p>
-          </div>
-        </div>
-        <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-xl flex items-center gap-4">
-          <div className="p-2 bg-slate-800 rounded-lg text-slate-400">
-            <Info size={20} />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 font-bold uppercase">
-              Model Confidence
-            </p>
-            <p className="text-lg font-mono text-white">94.1% (High)</p>
-          </div>
-        </div>
-      </div> */}
 
       {manualPredictions.length > 0 && (
         <section className="mb-12 animate-in slide-in-from-top duration-500">
@@ -102,42 +94,15 @@ export default function DashboardPage() {
           <div className="mt-8 border-b border-slate-800/50" />
         </section>
       )}
-
-
- {/* 🕒 Revalidating Banner */}
-    {status === 'loading' && (
-      <div className="mb-6 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-between animate-in fade-in slide-in-from-top-2">
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-          <p className="text-xs font-bold text-blue-400 uppercase tracking-widest">
-            Syncing Today's Odds...
-          </p>
-        </div>
-        {lastSync && (
-          <span className="text-[10px] text-slate-500 font-mono">
-            Showing Cache from: {new Date(lastSync).toLocaleTimeString()}
-          </span>
-        )}
-      </div>
-    )}
       {/* 🎾 Featured Matches Grid */}
       <section>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2">
             Featured Games
           </h2>
-         </div> 
+        </div>
 
-        {status === 'loading' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="h-52 bg-slate-900/40 animate-pulse rounded-2xl border border-slate-800"
-              />
-            ))}
-          </div>
-        ) : error ? (
+        {error ? (
           <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-6 rounded-2xl text-center">
             Failed to load live match feed: {error}
           </div>
@@ -150,11 +115,27 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* 🛠️ Modals */}
-       <PredictModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onPredictionSuccess={(newMatch) => setManualPredictions([newMatch, ...manualPredictions])}
+      {/* 🔄 Sync Button at Bottom Right */}
+      <div className="fixed bottom-8 right-8 flex items-center gap-4">
+        <span className="text-slate-400 text-sm">
+          Lastest sync: {formatLastSync(lastSync)}
+        </span>
+        <button
+          onClick={handleManualSync}
+          disabled={isSyncing}
+          className="flex items-center gap-2 text-white hover:text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <RefreshCw size={16} className={isSyncing ? "animate-spin" : ""} />
+          <span className="text-sm">Sync</span>
+        </button>
+      </div>
+
+      <PredictModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onPredictionSuccess={(newMatch) =>
+          setManualPredictions([newMatch, ...manualPredictions])
+        }
       />
     </div>
   );

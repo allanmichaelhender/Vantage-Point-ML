@@ -1,29 +1,35 @@
 import os
 import json
-import httpx 
-import google.generativeai as genai
+import httpx
 from datetime import datetime, timedelta
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.player_state import PlayerState
 
+
 class LLMService:
     def __init__(self):
-        self.gemini_key = os.getenv("GEMINI_API_KEY")
         self.odds_key = os.getenv("THE_ODDS_API_KEY")
-        genai.configure(api_key=self.gemini_key)
-        self.model = genai.GenerativeModel("gemini-2.5-flash-lite")
+        self.groq_key = os.getenv("GROQ_API_KEY")
+        self.model = None
+        try:
+            if self.groq_key:
+                print("✅ Groq API key configured - using llama-3.1-8b-instant")
+                self.model = "llama-3.1-8b-instant"
+            else:
+                print("⚠️ GROQ_API_KEY not set - LLMService disabled")
+        except Exception as e:
+            print(f"❌ Failed to initialize Groq API: {e}")
+            self.model = None
 
-    # Class method to fetch top playesr
+    # Class method to fetch top players
     async def get_elite_100(self, session: AsyncSession):
         six_months_ago = datetime.now() - timedelta(days=182)
         stmt = (
             select(
                 PlayerState.player_id, PlayerState.player_name, PlayerState.current_elo
             )
-            .where(
-                PlayerState.last_match_date >= six_months_ago
-            ) 
+            .where(PlayerState.last_match_date >= six_months_ago)
             .order_by(desc(PlayerState.current_elo))
             .limit(100)
         )
@@ -35,11 +41,14 @@ class LLMService:
         ]
 
     async def get_raw_markets(self):
+        if not self.odds_key:
+            print("⚠️ THE_ODDS_API_KEY not set - skipping get_raw_markets")
+            return {"matches": []}
+
         api_key = self.odds_key.strip()
         base_url = "https://api.the-odds-api.com/v4/sports"
 
         async with httpx.AsyncClient() as client:
-
             # First we need to query all upcoming tournaments for all sports
             sports_resp = await client.get(base_url, params={"apiKey": api_key})
             all_sports = sports_resp.json()
@@ -54,10 +63,9 @@ class LLMService:
                 and s.get("description") == "Men's Singles"
             ]
 
-
             # Loop over the active keys/upcoming or ongoing tournaments to get Odds for each active key
-            master_data = {"matches": []} # Initialising the data structure
-            for sport_key in active_keys: # Loop over upcoming tournaments
+            master_data = {"matches": []}  # Initialising the data structure
+            for sport_key in active_keys:  # Loop over upcoming tournaments
                 odds_url = f"{base_url}/{sport_key}/odds/"
                 odds_params = {
                     "apiKey": api_key,
@@ -68,7 +76,18 @@ class LLMService:
                 }
 
                 odds_resp = await client.get(odds_url, params=odds_params)
-                raw_matches = odds_resp.json() # Converts the response object into a dict
+                raw_matches = odds_resp.json()
+
+                # Check if response is a list (expected format) or an error
+                if not isinstance(raw_matches, list):
+                    print(f"⚠️ Unexpected API response for {sport_key}: {raw_matches}")
+                    continue
+
+                print(f"🔍 API returned {len(raw_matches)} matches for {sport_key}")
+                for match in raw_matches:
+                    print(
+                        f"  - {match.get('home_team')} vs {match.get('away_team')} @ {match.get('commence_time')}"
+                    )
 
                 for match in raw_matches:
                     # First we create the template for each match, to be appended later into our master data dict
@@ -113,10 +132,14 @@ class LLMService:
             return master_data
 
     async def sync_upcoming_matches(self, session: AsyncSession):
+        print("test")
+        if not self.model:
+            print("⚠️ Groq model not initialized - skipping sync_upcoming_matches")
+            return []
+
         elite_100 = await self.get_elite_100(session)
         match_data = await self.get_raw_markets()
 
-  
         prompt = """
 <task>
   You are a Tennis Data Quant. Cross-reference the <live_markets> against the <elite_player_db> to select the 6 most statistically significant matches.
@@ -167,21 +190,45 @@ class LLMService:
 
 """
 
-        response = self.model.generate_content(
-            prompt.format(
-                elite_db=json.dumps(elite_100), # json.dumps converts python dict into a json string
-                matches_and_markets=json.dumps(match_data),
-            ),
-            generation_config={"response_mime_type": "application/json"},
-        )
-
         try:
-            # Parse and return the structured data
-            data = json.loads(response.text)
-            return data.get("featured_matches", [])
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.groq_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": self.model,
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": prompt.format(
+                                    elite_db=json.dumps(elite_100),
+                                    matches_and_markets=json.dumps(match_data),
+                                ),
+                            }
+                        ],
+                        "temperature": 0.1,
+                        "response_format": {"type": "json_object"},
+                    },
+                    timeout=60.0,
+                )
+
+                if response.status_code != 200:
+                    print(
+                        f"❌ Groq API error: {response.status_code} - {response.text}"
+                    )
+                    return []
+
+                result = response.json()
+                content = result["choices"][0]["message"]["content"]
+                data = json.loads(content)
+                return data.get("featured_matches", [])
+
         except Exception as e:
-            print(f"❌ Gemini Parsing Error: {e}")
+            print(f"❌ Groq API Error: {e}")
             return []
 
 
-llmservice=LLMService()
+llmservice = LLMService()
