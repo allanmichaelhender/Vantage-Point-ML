@@ -42,7 +42,7 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-tennis_analytics}
-      - PYTHONPATH=/project 
+      - PYTHONPATH=/project
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - TAVILY_API_KEY=${TAVILY_API_KEY}
@@ -55,18 +55,20 @@ services:
       - 8.8.8.8
       - 8.8.4.4
 
+  # ── Frontend (builds to ./frontend/dist on the host) ──
   frontend:
     build: ./frontend
     container_name: tennis_ui
+    restart: "no"
     working_dir: /project/frontend
     volumes:
       - ./frontend:/project/frontend
       - /project/frontend/node_modules
-    ports:
-      - "5173:5173"
+    command: npm run build
     depends_on:
       - tennis_api
 
+  # ── Nginx reverse proxy + static file server ──
   nginx:
     image: nginx:alpine
     container_name: tennis_proxy
@@ -80,8 +82,8 @@ services:
       - ./certbot/www:/var/www/certbot:ro
     depends_on:
       - tennis_api
-      - frontend
 
+  # ── Certbot for SSL certificate management ──
   certbot:
     image: certbot/certbot
     container_name: tennis_certbot
