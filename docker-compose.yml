@@ -90,6 +90,5 @@ services:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
 
-volumes:
-  # postgres_data:   # removed — using Neon cloud DB
-  # pgadmin_data:    # removed — using Neon cloud DB
+# No named volumes needed — using anonymous volumes (/app/.venv, /project/frontend/node_modules)
+# and host bind mounts only. Neon cloud DB replaces the local Postgres volume.
