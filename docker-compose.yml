@@ -1,37 +1,36 @@
 services:
-  # 1. The Postgres 16 Database
-  db:
-    image: postgres:16-alpine
-    container_name: tennis_db
-    restart: always
-    environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-tennis_analytics}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+  # # 1. The Postgres 16 Database (disabled — using Neon cloud DB)
+  # db:
+  #   image: postgres:16-alpine
+  #   container_name: tennis_db
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: ${DB_USER:-postgres}
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+  #     POSTGRES_DB: ${DB_NAME:-tennis_analytics}
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
 
-  # 2. pgAdmin (Visual tool to inspect the TML data)
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: tennis_pgadmin
-    restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
-      PGADMIN_CONFIG_SERVER_MODE: "False" # Optional: better for single-user
-      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "False"
-    ports:
-      - "8080:80"
-    volumes:
-      # Map the internal pgAdmin data to a local Docker volume
-      - pgadmin_data:/var/lib/pgadmin
-    depends_on:
-      - db
+  # # 2. pgAdmin (Visual tool to inspect the TML data) — disabled
+  # pgadmin:
+  #   image: dpage/pgadmin4
+  #   container_name: tennis_pgadmin
+  #   restart: always
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+  #     PGADMIN_CONFIG_SERVER_MODE: "False"
+  #     PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "False"
+  #   ports:
+  #     - "8080:80"
+  #   volumes:
+  #     - pgadmin_data:/var/lib/pgadmin
+  #   depends_on:
+  #     - db
 
-  # 3. FastAPI Backend (The Engine)
+  # 2. FastAPI Backend (The Engine)
   tennis_api:
     build: .
     container_name: tennis_api
@@ -41,14 +40,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-tennis_analytics}
+      - DATABASE_URL=postgresql+asyncpg://neondb_owner:npg_QjdJIGB0oqe3@ep-gentle-cake-abmd0ftj-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
       - PYTHONPATH=/project
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - TAVILY_API_KEY=${TAVILY_API_KEY}
       - THE_ODDS_API_KEY=${THE_ODDS_API_KEY}
-    depends_on:
-      - db
 
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     dns:
@@ -94,5 +91,5 @@ services:
       - ./certbot/www:/var/www/certbot
 
 volumes:
-  postgres_data:
-  pgadmin_data:
+  # postgres_data:   # removed — using Neon cloud DB
+  # pgadmin_data:    # removed — using Neon cloud DB
