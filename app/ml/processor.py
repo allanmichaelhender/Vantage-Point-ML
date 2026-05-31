@@ -18,7 +18,7 @@ class TennisDataProcessor:
         self.scaler = StandardScaler()
 
         # Fit all the scalars now, we have to do this because of the retraining sets and keeping these constant
-        db_url = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2") # We swap to psycopg2 because we are using syncronous
+        db_url = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2").replace("ssl=require", "sslmode=require") # We swap to psycopg2 because we are using syncronous
         sync_engine = create_engine(db_url)
 
         all_possible_players = pd.read_sql("SELECT winner_id, loser_id FROM matches", sync_engine)
@@ -35,7 +35,7 @@ class TennisDataProcessor:
         if end_date is None:
             end_date = datetime.now().strftime("%Y-%m-%d")
 
-        db_url = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2")
+        db_url = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2").replace("ssl=require", "sslmode=require")
         sync_engine = create_engine(db_url)
 
         

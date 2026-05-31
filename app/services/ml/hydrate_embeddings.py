@@ -53,7 +53,7 @@ def nudge_encoder_in_memory(model, df, epochs=3, lr=0.0001):
 
 
 def hydrate_nn_probs(processor, model, start_date, end_date):
-    db_url = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2")
+    db_url = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2").replace("ssl=require", "sslmode=require")
     sync_engine = create_engine(db_url)
 
     raw_data = processor.fetch_raw_data(start_date, end_date)
@@ -106,7 +106,7 @@ def hydrate_nn_probs(processor, model, start_date, end_date):
 
 
 def hydrate_match_embeddings(start_date, end_date, id_to_emb):
-    db_url = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2")
+    db_url = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2").replace("ssl=require", "sslmode=require")
     sync_engine = create_engine(db_url)
 
     with sync_engine.begin() as conn:

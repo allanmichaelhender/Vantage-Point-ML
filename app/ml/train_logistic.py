@@ -17,7 +17,7 @@ def create_training_data(processor, NN_model, start_date="2015-01-01", end_date=
     if end_date is None:
         end_date = datetime.now().strftime("%Y-%m-%d")
 
-    db_url = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2")
+    db_url = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2").replace("ssl=require", "sslmode=require")
     sync_engine = create_engine(db_url)
 
     query = """
