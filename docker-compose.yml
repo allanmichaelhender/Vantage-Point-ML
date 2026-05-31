@@ -40,7 +40,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://neondb_owner:npg_QjdJIGB0oqe3@ep-gentle-cake-abmd0ftj-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+      - DATABASE_URL=${DATABASE_URL}
       - PYTHONPATH=/project
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
