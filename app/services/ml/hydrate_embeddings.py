@@ -48,12 +48,15 @@ def nudge_encoder_in_memory(model, df, epochs=3, lr=0.0001):
             optimizer.step()
             epoch_loss += loss.item()
 
-
     return model
 
 
 def hydrate_nn_probs(processor, model, start_date, end_date):
-    db_url = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2").replace("ssl=require", "sslmode=require")
+    db_url = (
+        os.getenv("DATABASE_URL")
+        .replace("asyncpg", "psycopg2")
+        .replace("ssl=require", "sslmode=require")
+    )
     sync_engine = create_engine(db_url)
 
     raw_data = processor.fetch_raw_data(start_date, end_date)
@@ -106,7 +109,11 @@ def hydrate_nn_probs(processor, model, start_date, end_date):
 
 
 def hydrate_match_embeddings(start_date, end_date, id_to_emb):
-    db_url = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2").replace("ssl=require", "sslmode=require")
+    db_url = (
+        os.getenv("DATABASE_URL")
+        .replace("asyncpg", "psycopg2")
+        .replace("ssl=require", "sslmode=require")
+    )
     sync_engine = create_engine(db_url)
 
     with sync_engine.begin() as conn:
@@ -162,7 +169,7 @@ def main():
         raw_train = processor.fetch_raw_data(training_start, current_date)
         processed_train = processor.process_and_balance(df=raw_train, frozen=True)
 
-        model= nudge_encoder_in_memory(model, processed_train)
+        model = nudge_encoder_in_memory(model, processed_train)
 
         hydrate_nn_probs(
             processor=processor, model=model, start_date=stamp_start, end_date=stamp_end
