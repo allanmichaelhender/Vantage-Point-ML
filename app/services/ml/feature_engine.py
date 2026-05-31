@@ -78,7 +78,7 @@ class PlayerHistory:
             fatigue,
             sv_won,
             df_pp,
-            matches_played
+            matches_played,
         )
 
 
@@ -103,8 +103,10 @@ async def run_feature_engine():
 
         # Looping over every match
         for m in matches:
-            if m.winner_id not in tracker: 
-                tracker[m.winner_id] = PlayerHistory(name=m.winner_name) # First we make a player history object for each player if they dont have one already
+            if m.winner_id not in tracker:
+                tracker[m.winner_id] = PlayerHistory(
+                    name=m.winner_name
+                )  # First we make a player history object for each player if they dont have one already
             if m.loser_id not in tracker:
                 tracker[m.loser_id] = PlayerHistory(name=m.loser_name)
 
@@ -115,15 +117,31 @@ async def run_feature_engine():
                 else m.tourney_date
             )
 
-           
-
             # Getting snapshots before game is played
-            w_m_win, w_g_win, w_off, w_s_off, w_ace, w_bp, w_fat, w_sv_won, w_df_pp, w_matches_played = (
-                w.get_snapshots(m_date, m.surface)
-            )
-            l_m_win, l_g_win, l_off, l_s_off, l_ace, l_bp, l_fat, l_sv_won, l_df_pp, l_matches_played = (
-                l.get_snapshots(m_date, m.surface)
-            )
+            (
+                w_m_win,
+                w_g_win,
+                w_off,
+                w_s_off,
+                w_ace,
+                w_bp,
+                w_fat,
+                w_sv_won,
+                w_df_pp,
+                w_matches_played,
+            ) = w.get_snapshots(m_date, m.surface)
+            (
+                l_m_win,
+                l_g_win,
+                l_off,
+                l_s_off,
+                l_ace,
+                l_bp,
+                l_fat,
+                l_sv_won,
+                l_df_pp,
+                l_matches_played,
+            ) = l.get_snapshots(m_date, m.surface)
 
             update_payload.append(
                 {
@@ -153,8 +171,7 @@ async def run_feature_engine():
                     "l_rolling_bp_save_pct": l_bp,
                     "l_tournament_fatigue": l_fat,
                     "w_matches_played": w_matches_played,
-                    "l_matches_played": l_matches_played
-
+                    "l_matches_played": l_matches_played,
                 }
             )
 
@@ -184,13 +201,13 @@ async def run_feature_engine():
                     "mins": m.minutes or 0,
                     "ace": m.w_ace or 0,
                     "df": m.w_df or 0,
-                    "svpt": m.w_svpt or 0,  
+                    "svpt": m.w_svpt or 0,
                     "svgms": m.w_SvGms or 0,
                     "bp_s": m.w_bpSaved or 0,
                     "bp_f": m.w_bpFaced or 0,
                     "sv_won": (m.w_1stWon or 0) + (m.w_2ndWon or 0),
-                    'surface': m.surface,
-                    'matches_played': m.w_matches_played or 0
+                    "surface": m.surface,
+                    "matches_played": m.w_matches_played or 0,
                 }
             )
             # Loser Data
@@ -200,13 +217,13 @@ async def run_feature_engine():
                     "mins": m.minutes or 0,
                     "ace": m.l_ace or 0,
                     "df": m.l_df or 0,
-                    "svpt": m.l_svpt or 0,  
+                    "svpt": m.l_svpt or 0,
                     "svgms": m.l_SvGms or 0,
                     "bp_s": m.l_bpSaved or 0,
                     "bp_f": m.l_bpFaced or 0,
                     "sv_won": (m.l_1stWon or 0) + (m.l_2ndWon or 0),
-                    'surface': m.surface,
-                    'matches_played': m.l_matches_played or 0
+                    "surface": m.surface,
+                    "matches_played": m.l_matches_played or 0,
                 }
             )
 
@@ -229,42 +246,37 @@ async def run_feature_engine():
             chunk = update_payload[i : i + 2000]
             await session.execute(update(Match), chunk)
             await session.commit()
-            print(f"✅ Synced {min(i + 2000, len(update_payload))} snapshots...")
+            # print(f"✅ Synced {min(i + 2000, len(update_payload))} snapshots...")
 
     print("🏁 Feature Engineering Complete.")
 
-    # Filtering 
+    # Filtering
     cutoff_date = date.today() - timedelta(days=365)
     final_registry_data = []
 
     for p_id, p_obj in tracker.items():
         # Only sync players who have played recently
         if p_obj.last_match_date and p_obj.last_match_date >= cutoff_date:
-
             last_match = p_obj.recent_matches[-1]
-            last_surface = last_match['surface']
+            last_surface = last_match["surface"]
 
             # Run get snapshots to include the last game
-            m_win, g_win, off, s_off, ace, bp, fat, sv_won, df_pp, matches_played = p_obj.get_snapshots(
-                p_obj.last_match_date, 
-                last_surface
+            m_win, g_win, off, s_off, ace, bp, fat, sv_won, df_pp, matches_played = (
+                p_obj.get_snapshots(p_obj.last_match_date, last_surface)
             )
-            
-            
-            final_registry_data.append({
+
+            final_registry_data.append(
+                {
                     "player_id": p_id,
-                    "player_name": p_obj.name, 
-                    
+                    "player_name": p_obj.name,
                     "current_elo": p_obj.elo,
                     "current_hard_elo": p_obj.surface_elo.get("Hard"),
                     "current_clay_elo": p_obj.surface_elo.get("Clay"),
                     "current_grass_elo": p_obj.surface_elo.get("Grass"),
-
                     "last_match_date": p_obj.last_match_date,
                     "last_hard_match_date": p_obj.last_surface_date.get("Hard"),
                     "last_clay_match_date": p_obj.last_surface_date.get("Clay"),
                     "last_grass_match_date": p_obj.last_surface_date.get("Grass"),
-
                     "rolling_match_win_pct": m_win,
                     "rolling_game_win_pct": g_win,
                     "rolling_serve_won_pct": sv_won,
@@ -272,30 +284,27 @@ async def run_feature_engine():
                     "rolling_df_per_pt": df_pp,
                     "rolling_bp_save_pct": bp,
                     "rolling_return_won_pct": 1.0 - sv_won,
-                    
                     "current_tournament_fatigue": fat,
-
-                    "matches_played": matches_played
-                })
+                    "matches_played": matches_played,
+                }
+            )
 
         # 2. Perform the FINAL BULK UPSERT
     if final_registry_data:
         print(f"🚀 Syncing {len(final_registry_data)} active players to Registry...")
-        
         stmt = insert(PlayerState).values(final_registry_data)
-        
+
         # Create a mapping for the update and excluding player ids from update
         update_cols = {
-            col.name: getattr(stmt.excluded, col.name) 
-            for col in PlayerState.__table__.columns 
-            if col.name != 'player_id'
+            col.name: getattr(stmt.excluded, col.name)
+            for col in PlayerState.__table__.columns
+            if col.name != "player_id"
         }
-        
+
         upsert_stmt = stmt.on_conflict_do_update(
-            index_elements=['player_id'],
-            set_=update_cols
+            index_elements=["player_id"], set_=update_cols
         )
-        
+
         await session.execute(upsert_stmt)
         await session.commit()
         print("🏁 Master Registry sync complete. Everything is ready for Inference.")

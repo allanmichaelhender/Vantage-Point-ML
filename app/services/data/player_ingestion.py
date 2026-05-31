@@ -43,9 +43,9 @@ async def ingest_players_csv(file_path: str):
     # Strike out duplicates across the whole dataset
     df = df.drop_duplicates(subset=["id"], keep="first")
 
-    print(
-        f"Removed {initial_count - len(df)} duplicates. {len(df)} unique players remain."
-    )
+    # print(
+    #     f"Removed {initial_count - len(df)} duplicates. {len(df)} unique players remain."
+    # )
 
     # 3. Global NaN to None
     df = df.where(pd.notnull(df), None)
@@ -73,7 +73,7 @@ async def ingest_players_csv(file_path: str):
                 for _, row in chunk.iterrows()
             ]
 
-           # Bulk Upsert the clean chunk
+            # Bulk Upsert the clean chunk
             stmt = insert(Player).values(players_data)
             stmt = stmt.on_conflict_do_update(
                 index_elements=["id"],
@@ -90,9 +90,9 @@ async def ingest_players_csv(file_path: str):
 
             await session.execute(stmt)
             await session.commit()
-            print(f"📦 Progress: {i + len(players_data)} players ingested...")
+            # print(f"📦 Progress: {i + len(players_data)} players ingested...")
 
-    print(f"✅ Final Success: {len(df)} players are now in the database.")
+    # print(f"✅ Final Success: {len(df)} players are now in the database.")
 
 
 if __name__ == "__main__":

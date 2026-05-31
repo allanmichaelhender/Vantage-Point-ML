@@ -59,21 +59,27 @@ async def ingest_csv_file(file_path: str):
 
     reader = pd.read_csv(
         file_path,
-        low_memory=False, # Safer to do this since we are chunking anyway
-        chunksize=chunk_size, 
-        dtype={"winner_id": str, "loser_id": str}, # Better to force the dtypes rather than auto generate
+        low_memory=False,  # Safer to do this since we are chunking anyway
+        chunksize=chunk_size,
+        dtype={
+            "winner_id": str,
+            "loser_id": str,
+        },  # Better to force the dtypes rather than auto generate
     )
 
     total = 0
     async with async_session() as session:
-
         # Query the db to get a set of calie player id's, set ensures uniqueness
         player_ids = await session.execute(select(Player.id))
         valid_ids = set(player_ids.scalars().all())
 
         for df_chunk in reader:
-            true_false_df = pd.notnull(df_chunk) # Non null values assigned true, nulls to false
-            df_chunk = df_chunk.where(true_false_df, None) # Peserves the trues and maps the falses to none, postgres likes none over np.nan
+            true_false_df = pd.notnull(
+                df_chunk
+            )  # Non null values assigned true, nulls to false
+            df_chunk = df_chunk.where(
+                true_false_df, None
+            )  # Peserves the trues and maps the falses to none, postgres likes none over np.nan
 
             # Making a list comprehension of every match in the chunk, fast way to put our data into a good form
             matches_data = [
@@ -92,7 +98,6 @@ async def ingest_csv_file(file_path: str):
                     "best_of": clean_int(row.get("best_of")) or 3,
                     "round": str(row["round"]),
                     "minutes": clean_int(row.get("minutes")),
-
                     # Winner Stats
                     "w_ace": clean_int(row.get("w_ace")),
                     "w_df": clean_int(row.get("w_df")),
@@ -105,7 +110,6 @@ async def ingest_csv_file(file_path: str):
                     "w_bpFaced": clean_int(row.get("w_bpFaced")),
                     "winner_rank": clean_int(row.get("winner_rank")),
                     "winner_ranking_points": clean_int(row.get("winner_rank_points")),
-
                     # Loser Stats
                     "l_ace": clean_int(row.get("l_ace")),
                     "l_df": clean_int(row.get("l_df")),
@@ -118,7 +122,6 @@ async def ingest_csv_file(file_path: str):
                     "l_bpFaced": clean_int(row.get("l_bpFaced")),
                     "loser_rank": clean_int(row.get("loser_rank")),
                     "loser_ranking_points": clean_int(row.get("loser_rank_points")),
-
                     # Accessing the unpacked tuple results
                     "is_retirement": res[0],
                     "total_games": res[1],
@@ -159,9 +162,9 @@ WHERE matches.loser_id = players.id
                 await session.commit()
 
                 total += len(matches_data)
-                print(f"📦 {file_path}: {total} matches synced...")
+                # print(f"📦 {file_path}: {total} matches synced...")
 
-    print(f"✅ Ingestion Complete for {file_path}")
+    # print(f"✅ Ingestion Complete for {file_path}")
     return total
 
 
@@ -169,7 +172,7 @@ async def main():
     DATA_DIR = "/project/app/tml-data"
     years = [f"{year}.csv" for year in range(2010, 2027)]
 
-    grand_total = 0 
+    grand_total = 0
 
     for filename in years:
         file_path = os.path.join(DATA_DIR, filename)
