@@ -1,2 +1,5 @@
 .venv
 .env
+
+# Local Docker Compose overrides (dev only — should not be deployed)
+docker-compose.override.yml
